@@ -8,7 +8,7 @@ require(plyr)
 require(tidyverse)
 
 ## Data Cleaning
-setwd("~/Dropbox (Personal)/Projects/RA-Biomarker/")
+setwd("~/Dropbox/Projects/RA-Biomarker/")
 
 raDat_raw <- read.delim("data/forKevin.txt", stringsAsFactors = FALSE)
 names(raDat_raw) <- tolower(names(raDat_raw))

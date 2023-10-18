@@ -12,7 +12,7 @@ library(tableone)
 library(mcmcse)
 
 # Set working directory
-setwd("D:/Dropbox (Personal)/Projects/RA-Biomarker/")
+setwd("~/Dropbox/Projects/RA-Biomarker/")
 
 hpd = function(x, alpha = 0.05) {
   n = length(x)

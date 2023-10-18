@@ -4,11 +4,11 @@ data {
   int<lower=1> N;
   int<lower=1> M;
   int<lower=1> K;
-  int id[N];
   
   vector[K] Y[N];
   vector[N] t;
-
+  int id[N];
+  
   vector[K] a;
   vector[K] b;
   
@@ -37,7 +37,7 @@ transformed parameters {
   cov_matrix[K] Sigma_0;
   cov_matrix[K] Sigma_e;
   Sigma_0 = quad_form_diag(corr_0, sigma_0);
-  Sigma_e = diag_matrix(sigma_e);
+  Sigma_e = quad_form_diag(corr_e, sigma_e);
   
 }
 
@@ -69,6 +69,7 @@ model {
   
   corr_0 ~ lkj_corr(1);
   sigma_0 ~ cauchy(0, 5);
+  corr_e ~ lkj_corr(1);
   sigma_e ~ cauchy(0, 5);
   
   kappa ~ uniform(-20, 10);

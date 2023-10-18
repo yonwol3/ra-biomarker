@@ -13,10 +13,10 @@ library(plyr)
 library(splines)
 
 # Reading data cleaning R file
-source("D:/Dropbox (Personal)/Projects/RA-Biomarker/code/clean-dat.R")
+source("~/Github/ra-biomarker/clean-dat.R")
 
 # Set working directory
-setwd("D:/Dropbox (Personal)/Projects/RA-Biomarker/")
+setwd("~/Dropbox/Projects/RA-Biomarker/")
 
 # Naming serum antibodies correctly
 colnames(Y) <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
@@ -81,11 +81,11 @@ dev.off()
 
 ## Changepoint Density Plot
 
-load("mcmc/mcmc_a.RData")
+load("mcmc/mcmc_b.RData")
 
 kappa.names <- c("kappa[1]", "kappa[2]", "kappa[3]", "kappa[4]", "kappa[5]", "kappa[6]")
 
-kappa <- mcmc[[1]][,kappa.names]
+kappa <- mcmc_b[[1]][,kappa.names]
 colnames(kappa) <- colnames(Y)
 
 png("images/change-point-dist.png", 
@@ -98,7 +98,7 @@ plot(density(kappa[,1]), lwd = 2,
      col = "darkolivegreen4", ylab = "Posterior Density", xlab = "kappa",
      ylim = c(0, 1.2),
      xlim = c(-20, 5),
-     main = "Change-point Densities")
+     main = "Change Point Densities")
 lines(density(kappa[,2]), lwd = 2,
       col = "darkorange4")
 lines(density(kappa[,3]), lwd = 2,
@@ -122,7 +122,7 @@ dev.off()
 ## Diagnostics of model (a)
 
 pdf("images/trace_a.pdf")
-plot(mcmc)
+plot(mcmc_b)
 dev.off()
 
 mcmc <- as.matrix(mcmc[[1]])
