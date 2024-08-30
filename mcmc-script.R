@@ -18,9 +18,9 @@ setwd("~/Dropbox/Projects/RA-Biomarker/")
 
 # Hyperparameters
 a <- b <- rep(0, times = K)
-R <- S <- diag(1e-10, nrow = K, ncol = K) # beta/mu covariance hyperparameters
+R <- S <- diag(1e-6, nrow = K, ncol = K) # beta/mu covariance hyperparameters
 u <- 2
-v <- rep(1e5, K)
+v <- rep(1e-6, K)
 
 jagsDat <- list(N = N, M = M, K = K, Y = logY, t = t, id = study_id,
                 a = a, b = b, S = S, R = R, u = u, v = v,
@@ -40,13 +40,24 @@ mcmc_b <- coda.samples(mod_b, variable.names = c("beta", "kappa", "mu", "tau_e")
 
 save(mcmc_b, file = "mcmc/mcmc_b.RData")
 
-# STAN
+## STAN Models
+
+# Hyperparameters
+a <- b <- rep(0, times = K)
+R <- S <- diag(1e6, nrow = K, ncol = K) # beta/mu covariance hyperparameters
 
 standata <- list(N = N, M = M, K = K, Y = logY, 
                  t = t, id = study_id,
                  a = a, b = b, S = S, R = R)
 
-stanmodel <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-d.stan", model_name="stanmodel")
-samples <- sampling(stanmodel, data = standata, iter = 1000, warmup = 100, chains = 1, check_data = FALSE)
-codasamples <- do.call(mcmc.list, plyr::alply(rstan::extract(samples, pars=paste0("kappa[", 1:K, "]"), permuted=FALSE), 2, mcmc))
-summary(codasamples)
+stanmodel_c <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-c.stan", model_name="stanmodel_c")
+samples_c <- sampling(stanmodel_c, data = standata, iter = 20000, warmup = 5000, chains = 1, check_data = FALSE)
+mcmc_c <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_c, pars=paste0("kappa[", 1:K, "]"), permuted=FALSE), 2, coda::mcmc))
+save(mcmc_c, file = "mcmc/mcmc_c.RData")
+summary(mcmc_c)
+
+stanmodel_d <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-d.stan", model_name="stanmodel_d")
+samples_d <- sampling(stanmodel_d, data = standata, iter = 20000, warmup = 5000, chains = 1, check_data = FALSE)
+mcmc_d <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_d, pars=paste0("kappa[", 1:K, "]"), permuted=FALSE), 2, coda::mcmc))
+save(mcmc_d, file = "mcmc/mcmc_d.RData")
+summary(mcmc_d)
