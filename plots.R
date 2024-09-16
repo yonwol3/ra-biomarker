@@ -110,6 +110,7 @@ lines(density(kappa[,5]), lwd = 2,
 lines(density(kappa[,6]), lwd = 2,
       col = "khaki4")
 abline(v = 0, lty = 2, col = "blue")
+abline(h = 0, lty = 1, col = "black")
 grid()
 legend("topleft", 
        legend = colnames(Y),
@@ -120,17 +121,17 @@ legend("topleft",
 
 dev.off()
 
-## Diagnostics of model (b)
+## Diagnostics of model (c)
 
-load("mcmc/mcmc_b.RData")
+load("mcmc/mcmc_c.RData")
 
-pdf("images/trace_b.pdf")
-plot(mcmc_b)
+pdf("images/trace_c.pdf")
+plot(mcmc_c)
 dev.off()
 
-mcmc <- as.matrix(mcmc_b[[1]])
+mcmc <- as.matrix(mcmc_c[[1]])
 
-png("images/acf_b.png", 
+png("images/acf_c.png", 
     width = 7000, 
     height = 6000,
     res = 100, 
@@ -156,7 +157,7 @@ png("images/acf_c.png",
     height = 6000,
     res = 100, 
     units = "px")
-par(mfrow = c(4, 6), mar = c(1,1,1,1))
+par(mfrow = c(4, 3), mar = c(1,1,1,1))
 for (i in 1:ncol(mcmc))
   acf(mcmc[,i], ylab = colnames(mcmc)[i])
 title("ACF Plots", outer = TRUE)
