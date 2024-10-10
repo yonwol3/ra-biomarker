@@ -1,5 +1,0 @@
-model {
-
-	Omega_0 ~ dwish(V_0, u_0)
-
-}          

@@ -34,10 +34,10 @@ parameters {
 
 transformed parameters {
   
-  cov_matrix[K] Sigma_0;
+  matrix[K,K] Sigma_0;
   cov_matrix[K] Sigma_e;
   Sigma_0 = diag_pre_multiply(sigma_0, corr_0);
-  Sigma_e = diag_matrix(sigma_e);
+  Sigma_e = diag_matrix(sigma_e^2);
   
 }
 

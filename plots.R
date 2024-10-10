@@ -96,7 +96,7 @@ png("images/change-point-dist.png",
 
 plot(density(kappa[,1]), lwd = 2,
      col = "darkolivegreen4", ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 1.2),
+     ylim = c(0, 0.8),
      xlim = c(-20, 5),
      main = "Change Point Densities")
 lines(density(kappa[,2]), lwd = 2,
