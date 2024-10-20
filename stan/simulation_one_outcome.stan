@@ -10,7 +10,7 @@ data {
         real r;       // prior sd for beta1:3 and mu parameters 
 }
 
-Parameters  {
+parameters  {
 
         real alpha[M];  // random intercepts for each unique individual
         real mu;   // mean of random intercepts
@@ -29,7 +29,7 @@ model {
           alpha ~ normal (mu, sigma_0);
           
 	// Likelihood
-         for ( i in N ) {
+         for ( i in 1:N ) {
              eta[i]= alpha[id[i]] + beta1*t[i] +beta2*g[i] +beta3*g[i]*fdim(t[i], kappa);
 
             } 
@@ -37,7 +37,7 @@ model {
 
          // Priors 
 
-          mu~normal(a,r)
+          mu~normal(a,r);
 	  beta1~ normal (a,r);
           beta2~ normal (a,r);
           beta3~ normal (a,r);
