@@ -59,6 +59,11 @@ rm(tmp, mean_agediag, bage.tmp)
 subj_id <- raDat$subj_id
 study_id <- raDat$study_id
 
+cens_max <- apply(logY, 2, function(z) as.numeric(z == max(z)))
+cens_min <- apply(logY, 2, function(z) as.numeric(z == min(z)))
+maxY <- apply(logY, 2, max)
+minY <- apply(logY, 2, min)
+
 # Cleaned Data
 clean <- data.frame(time, bage, fem, nw, famhx, subj_id, study_id, diagnosis, Y)
 write.csv(clean, "data/clean.csv")

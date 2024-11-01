@@ -6,7 +6,12 @@ data {
   int<lower=1> K;
   int id[N];
   
-  vector[K] Y[N];
+  vector[K] Y_obs[N];
+  vector[K] D_min[N];
+  vector[K] D_max[N];
+  vector[K] D_obs[N];
+  vector[K] L;
+  vector[K] U;
   vector[N] t;
   vector[N] g;
 
@@ -31,21 +36,57 @@ parameters {
   vector<lower=0>[K] sigma_e;
   vector<lower=-20,upper=5>[K] kappa;
   
+  vector<upper=L[1]>[N] Y_cens_min1;
+  vector<upper=L[2]>[N] Y_cens_min2;
+  vector<upper=L[3]>[N] Y_cens_min3;
+  vector<upper=L[4]>[N] Y_cens_min4;
+  vector<upper=L[5]>[N] Y_cens_min5;
+  vector<upper=L[6]>[N] Y_cens_min6;
+
+  vector<lower=U[1]>[N] Y_cens_max1;
+  vector<lower=U[2]>[N] Y_cens_max2;
+  vector<lower=U[3]>[N] Y_cens_max3;
+  vector<lower=U[4]>[N] Y_cens_max4;
+  vector<lower=U[5]>[N] Y_cens_max5;
+  vector<lower=U[6]>[N] Y_cens_max6;
+
 }
 
 transformed parameters {
   
+  vector[K] Y_cens_min[N];
+  vector[K] Y_cens_max[N];
+
+  for (i in 1:N) {
+  
+    Y_cens_min[i,1] = Y_cens_min1[i];
+    Y_cens_min[i,2] = Y_cens_min2[i];
+    Y_cens_min[i,3] = Y_cens_min3[i];
+    Y_cens_min[i,4] = Y_cens_min4[i];
+    Y_cens_min[i,5] = Y_cens_min5[i];
+    Y_cens_min[i,6] = Y_cens_min6[i];
+
+    Y_cens_max[i,1] = Y_cens_max1[i];
+    Y_cens_max[i,2] = Y_cens_max2[i];
+    Y_cens_max[i,3] = Y_cens_max3[i];
+    Y_cens_max[i,4] = Y_cens_max4[i];
+    Y_cens_max[i,5] = Y_cens_max5[i];
+    Y_cens_max[i,6] = Y_cens_max6[i];
+
+  }
+
   cov_matrix[K] Sigma_0;
   matrix[K,K] Sigma_e;
   Sigma_0 = diag_matrix(sigma_0^2);
   Sigma_e = diag_pre_multiply(sigma_e^2, corr_e);
-  
+
 }
 
 model {
   
   vector[K] eta[N];
-  
+  vector[K] Y_full[N];
+
   // Random Intercept
   alpha ~ multi_normal(mu, Sigma_0);
   
@@ -53,6 +94,9 @@ model {
   for (i in 1:N) {
     
     for (k in 1:K) {
+
+      // impute censored values
+      Y_full[i,k] = D_obs[i,k]*Y_obs[i,k] + D_min[i,k]*Y_cens_min[i,k] + D_max[i,k]*Y_cens_max[i,k];
       
       // change point 
       eta[i,k] = alpha[id[i],k] + beta1[k]*g[i] + beta2[k]*t[i] + gamma[k]*g[i]*fdim(t[i],kappa[k]);
@@ -61,8 +105,10 @@ model {
     
   }
   
-  Y ~ multi_normal_cholesky(eta, Sigma_e);
-  
+  Y_full ~ multi_normal_cholesky(eta, Sigma_e);
+  Y_cens_min ~ multi_normal_cholesky(eta, Sigma_e);
+  Y_cens_max ~ multi_normal_cholesky(eta, Sigma_e);
+
   // Priors
   mu ~ multi_normal(a, R);
   beta1 ~ multi_normal(b, S);
