@@ -27,17 +27,20 @@ data {
 
 parameters {
   
+  // mean function
   vector[K] mu;
   vector[K] alpha[M];
   vector[K] beta1;
   vector[K] beta2;
   vector[K] gamma;
   
+  // covariance
   cholesky_factor_corr[K] corr_0;
   vector<lower=0>[K] sigma_0;
   vector<lower=0>[K] sigma_e;
   vector<lower=-20,upper=5>[K] kappa;
 
+  // LOD
   vector<upper=L>[K] Y_min[N];
   vector<lower=U>[K] Y_max[N];
   
@@ -76,6 +79,7 @@ model {
     
   }
   
+  // Sample Data
   Y_full ~ multi_normal(eta, Sigma_e);
   Y_min ~ multi_normal(eta, Sigma_e);
   Y_max ~ multi_normal(eta, Sigma_e);
