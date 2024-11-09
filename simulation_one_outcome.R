@@ -15,8 +15,8 @@ library(rstan)
 sigma_b <- 1  # Standard deviation for random intercepts
 sigma_e <- 2  # Standard deviation for error terms
 n <- 200      # Total number of observations
-m <- 20       # Number of subjects
-c <- 10       # Observations per subject
+m <- 50       # Number of subjects
+c <- n/m     # Observations per subject
 kappa <- -8   # Change point parameter
 a <- -20      # Uniform distribution lower bound
 b <- 5        # Uniform distribution upper bound
@@ -74,7 +74,7 @@ for (i in 1:n_sim) {
                    r= 10^6)
   
   stan_fit<- stan(data = stan_dat, file = "Stan/simulation_one_outcome.stan", 
-                  chains = 4, iter = 4000, warmup = 2000)
+                  chains = 1, iter = 4000, warmup = 2000)
   
   # Extract summary statistics
   fit_summary <- summary(stan_fit, pars = c("beta3", "kappa"))$summary
