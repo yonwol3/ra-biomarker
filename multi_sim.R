@@ -7,6 +7,7 @@
 library(tidyverse)
 library(MASS)
 library(rstan)
+library(clusterGeneration)  # For generating positive definite covariance matrices
 
 set.seed(2222)
 
@@ -14,62 +15,73 @@ set.seed(2222)
 # Parameter Specification
 #-------------------------#
 
-
 a <- -20      # Uniform distribution lower bound
 b <- 5        # Uniform distribution upper bound
-n <- 200      # Total number of observations
+n <- 500      # Total number of observations
 m <- 50       # Number of subjects
-c <- n/m     # Observations per subject
-k<-6         # of biomarkers
+c <- n / m    # Observations per subject
+k <- 6        # Number of biomarkers
 sigma_0 <- 1  # Standard deviation for random intercepts
 sigma_e <- 2  # Standard deviation for error terms
-var_cov_sigma_0<-diag(sigma_0^2,k,k) # var-cov for alpha
-var_cov_sigma_e<- matrix(rexp(k*k, rate = 4), nrow = k)
-diag(var_cov_sigma_e)<-rep(sigma_e^2,k) # correlation of the errors
-beta1<- rnorm(k)  # Time parameters
-beta2<- rnorm(k)  # Treatment parameters
-gamma<- rnorm(k) # Interaction parameters
-kappa <- runif(6, min=a, max=b)  # Change point parameters
-mu<- rnorm(k)
 
+# Variance-covariance matrix for random intercepts (assuming uncorrelated)
+var_cov_sigma_0 <- diag(sigma_0^2, k)  # Variance-covariance matrix for alpha
+
+# Generate a random correlation matrix for errors
+rho_e <- genPositiveDefMat(k, covMethod = "onion")$Sigma
+
+# Create the covariance matrix for errors
+var_cov_sigma_e <- diag(sigma_e, k) %*% rho_e %*% diag(sigma_e, k)
+
+beta1 <- rnorm(k)         # Time parameters
+beta2 <- rnorm(k)         # Treatment parameters
+gamma <- rnorm(k)         # Interaction parameters
+kappa <- runif(k, min = a, max = b)  # Change point parameters
+mu <- rnorm(k)
 
 #---------------------------#
-# Simulation study 
+# Simulation Study
 #--------------------------# 
 
-Y<- matrix (NA, nrow=n, ncol = k)
-nsim= 1  
+Y <- matrix(NA, nrow = n, ncol = k)
 
-  id <- rep(1:m, each=c)
-  time <- runif(n, a, b)
-  ccp3 <- as.numeric(id <= 20)
-  alpha<- mvrnorm(m, mu = mu, Sigma = var_cov_sigma_0) # random intercept 
-  error<-mvrnorm(n, mu=rep(0,k), Sigma= var_cov_sigma_e) # random errors
-  
-  for (j in 1:k) {
-    Y[,j]<- rep(alpha[, j],each=c) + beta1[j]*time+beta2[j]*ccp3 + 
-             ifelse(time > kappa[j] & ccp3 == 1, gamma[j] * (time - kappa[j]), 0) + error[j]
-    
-  }
-  
-  dat<- as.data.frame(cbind(Y,id=id, time=time, ccp3=ccp3))
-  
-  stan_dat<- list(N=nrow(dat),
-                  M=length(unique(dat$id)),
-                  K=k, 
-                  id=dat$id,
-                  t=dat$time,
-                  g=dat$ccp3,
-                  a=0, 
-                  b=0,
-                  R= diag(10^6, nrow= k),
-                  S=diag(10^6, nrow = k),
-                  Y= Y)
-  
-                  
-  stan_fit<- stan(data = stan_dat, file = "Stan/multi_sim.stan", 
-                  chains = 1, iter = 4000, warmup = 2000)
-  
-  
-  
+id <- rep(1:m, each = c)
+time <- runif(n, a, b)
+ccp3 <- as.numeric(id <= 20)
+alpha <- mvrnorm(m, mu = mu, Sigma = var_cov_sigma_0)     # Simulate random intercepts
+error <- mvrnorm(n, mu = rep(0, k), Sigma = var_cov_sigma_e)  # Simulate random errors
 
+for (j in 1:k) {
+  Y[, j] <- rep(alpha[, j], each = c) + beta1[j] * time + beta2[j] * ccp3 +
+    ifelse(time > kappa[j] & ccp3 == 1, gamma[j] * (time - kappa[j]), 0) + error[, j]
+}
+
+dat <- as.data.frame(cbind(Y, id = id, time = time, ccp3 = ccp3))
+
+stan_dat <- list(
+  N = nrow(dat),
+  M = length(unique(dat$id)),
+  K = k,
+  id = dat$id,
+  t = dat$time,
+  g = dat$ccp3,
+  a = rep(0, k),
+  b = rep(0, k),
+  R = diag(1e6, nrow = k),
+  S = diag(1e6, nrow = k),
+  Y = as.matrix(dat[, 1:k])
+)
+
+stan_fit <- stan(
+  data = stan_dat,
+  file = "Stan/multi_sim.stan",
+  chains = 1,
+  iter = 4000,
+  warmup = 2000
+)
+
+pars=c(paste0("gamma","[",1:k,"]"),paste0("kappa","[",1:k,"]")) # specific parameters for our research question
+
+summary_stanfit<-summary(stan_fit, pars=pars)$summary
+summary_stanfit
+rstan::traceplot(stan_fit, pars = pars)
