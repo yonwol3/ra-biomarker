@@ -2,13 +2,12 @@
 ## PURPOSE: Script for creation of scatterplots and     ##
 ##          smoothed splines for exploratory analysis   ##
 ##          of RA dataset                               ##
-## BY:      Kevin Josey                                 ##
+## BY:      Yonatan Wolde                               ##
 ##########################################################
 
 # Libraries
 
 library(tidyverse)
-library(rjags)
 library(plyr)
 library(splines)
 library(ggplot2)
@@ -16,172 +15,20 @@ library(RColorBrewer)
 library(gridExtra)
 
 # Reading data cleaning R file
-source("clean-data.R")
-
-
+setwd("~/Dropbox/Projects/RA-Biomarker/")
+source("~/Github/ra-biomarker/clean-data.R")
 
 # Naming serum antibodies correctly
 colnames(Y) <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
-clean<- clean %>%
-         dplyr::rename('RF IgA'= igarfconc_ , 
+clean <- clean %>%
+  dplyr::rename('RF IgA'= igarfconc_ , 
                 'RF IgM'= igmrfconc_ , 
                 'RF IgG'= iggrfconc_ , 
                 'ACPA IgA'= igaccpavgconc, 
                 'ACPA IgM'= igmccpavgconc, 
                 'ACPA IgG'= iggccpavgconc)
 
-
-## Descriptive Spline Plot
-
-png(filename = "figures/spline-plots-horiz.png",
-    width = 12,
-    height = 8,
-    units = "in",
-    res = 300)
-
-par(mfrow = c(2,3))
-
-# smoothing splines - igarfconc_
-sm_spline1 <- smooth.spline(raDat$t_yrs, Y[,1], df = 4)
-plot(raDat$t_yrs, Y[,1], col="grey",
-     xlab = "Time before Diagnosis", ylab = "RF-IgA",
-     main = "RF-IgA Serum Levels over Time with \nSmoothing Spline")
-abline(v = 0, lty = 3, col = "black")
-lines(sm_spline1, col = "darkolivegreen4", lwd = 2)
-
-#smoothing splines - igmrfconc_
-sm_spline2 <- smooth.spline(raDat$t_yrs, Y[,2], df = 4)
-plot(raDat$t_yrs, Y[,2], col = "grey",
-     xlab = "Time before Diagnosis", ylab = "RF-IgM", 
-     main = "RF-IgM Serum Levels over Time with \nSmoothing Spline")
-abline(v = 0, lty = 3, col = "black")
-lines(sm_spline2, col = "darkorange4", lwd = 2)
-
-#smoothing splines - iggrfconc_
-sm_spline3 <- smooth.spline(raDat$t_yrs, Y[,3], df = 4)
-plot(raDat$t_yrs, Y[,3], col = "grey",
-     xlab = "Time before Diagnosis", ylab="RF-IgG", 
-     main = "RF-IgG Serum Levels over Time with \nSmoothing Spline")
-abline(v = 0, lty = 3, col = "black")
-lines(sm_spline3, col= "firebrick4", lwd = 2)
-
-#smoothing splines - igaccpavgconc
-sm_spline4 <- smooth.spline(raDat$t_yrs, Y[,4], df = 4)
-plot(raDat$t_yrs, Y[,4],col = "grey",
-     xlab = "Time before Diagnosis", ylab="ACPA-IgA",
-     main="ACPA-IgA Serum Levels over Time with \nSmoothing Spline")
-abline(v=0, lty=3, col = "black")
-lines(sm_spline4, col = "dodgerblue4", lwd = 2)
-
-#smoothing splines - igmccpavgconc
-sm_spline5 <- smooth.spline(raDat$t_yrs, Y[,5], df = 4)
-plot(raDat$t_yrs, Y[,5], col="grey",
-     xlab = "Time before Diagnosis", ylab = "ACPA-IgM",
-     main = "ACPA-IgM Serum Levels over Time with \nSmoothing Spline")
-abline(v = 0, lty = 3, col = "black")
-lines(sm_spline5, col = "mediumorchid4", lwd = 2)
-
-sm_spline6 <- smooth.spline(raDat$t_yrs, Y[,6], df = 4)
-plot(raDat$t_yrs, Y[,6], col="grey",
-     xlab = "Time before Diagnosis", ylab = "ACPA-IgG",
-     main = "ACPA-IgG Serum Levels over Time with \nSmoothing Spline")
-abline(v = 0, lty = 3, col = "black")
-lines(sm_spline6, col= "khaki4", lwd = 2)
-dev.off()
-
-
-## Changepoint Density Plot
-
-load("mcmc/mcmc_c.RData")
-
-kappa.names <- c("kappa[1]", "kappa[2]", "kappa[3]", "kappa[4]", "kappa[5]", "kappa[6]")
-
-kappa <- mcmc_c[[1]][,kappa.names]
-colnames(kappa) <- colnames(Y)
-
-png("figures/change-point-dist.png", 
-    width = 1000, 
-    height = 1000,
-    res = 100, 
-    units = "px")
-
-plot(density(kappa[,1]), lwd = 2,
-     col = "darkolivegreen4", ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 0.8),
-     xlim = c(-20, 5),
-     main = "Change Point Densities")
-lines(density(kappa[,2]), lwd = 2,
-      col = "darkorange4")
-lines(density(kappa[,3]), lwd = 2,
-      col = "firebrick4")
-lines(density(kappa[,4]), lwd = 2,
-      col = "dodgerblue4")
-lines(density(kappa[,5]), lwd = 2,
-      col = "mediumorchid4")
-lines(density(kappa[,6]), lwd = 2,
-      col = "khaki4")
-abline(v = 0, lty = 2, col = "blue")
-abline(h = 0, lty = 1, col = "black")
-grid()
-legend("topleft", 
-       legend = colnames(Y),
-       col = c("darkolivegreen4", "darkorange4", "firebrick4", 
-               "dodgerblue4", "mediumorchid4", "khaki4"), 
-       lwd = c(2, 2, 2, 2, 2, 2),
-       cex = 1)
-
-dev.off()
-
-## Diagnostics of model (c)
-
-load("mcmc/mcmc_c.RData")
-
-pdf("images/trace_c.pdf")
-plot(mcmc_c)
-dev.off()
-
-mcmc <- as.matrix(mcmc_c[[1]])
-
-png("images/acf_c.png", 
-    width = 7000, 
-    height = 6000,
-    res = 100, 
-    units = "px")
-par(mfrow = c(4, 6), mar = c(1,1,1,1))
-for (i in 1:ncol(mcmc))
-  acf(mcmc[,i], ylab = colnames(mcmc)[i])
-title("ACF Plots", outer = TRUE)
-dev.off()
-
-## Diagnostics of model (c)
-
-load("mcmc/mcmc_c.RData")
-
-pdf("images/trace_c.pdf")
-plot(mcmc_c)
-dev.off()
-
-mcmc <- as.matrix(mcmc_c[[1]])
-
-png("images/acf_c.png", 
-    width = 7000, 
-    height = 6000,
-    res = 100, 
-    units = "px")
-par(mfrow = c(4, 3), mar = c(1,1,1,1))
-for (i in 1:ncol(mcmc))
-  acf(mcmc[,i], ylab = colnames(mcmc)[i])
-title("ACF Plots", outer = TRUE)
-dev.off()
-
-
-
-
-
-
-#################################################
-## Visualize biomarkers for different RA groups
-#################################################
+## LOESS Plot
 
 # Assuming the original 'diagnosis' variable uses 0 for 'no_RA' and 1 for 'RA'
 clean$diagnosis <- factor(clean$diagnosis, levels = c(0, 1), labels = c("no_RA", "RA"))
@@ -263,11 +110,92 @@ for (i in seq_along(outcome_vars)) {
   
   # Add the plot to the list
   plot_list[[i]] <- p
+  
 }
 
-  grid.arrange(grobs = plot_list, ncol = 2)
+grid.arrange(grobs = plot_list, ncol = 2)
 
+## Changepoint Density Plot
 
+load("mcmc/mcmc_d.RData")
 
+kappa.names <- c("kappa[1]", "kappa[2]", "kappa[3]", "kappa[4]", "kappa[5]", "kappa[6]")
 
+kappa <- mcmc_d[[1]][,kappa.names]
+colnames(kappa) <- colnames(Y)
+
+png("figures/change-point-dist.png", 
+    width = 1000, 
+    height = 1000,
+    res = 100, 
+    units = "px")
+
+plot(density(kappa[,1]), lwd = 2,
+     col = "darkolivegreen4", ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
+     ylim = c(0, 0.8),
+     xlim = c(-20, 5),
+     main = "Change Point Densities")
+lines(density(kappa[,2]), lwd = 2,
+      col = "darkorange4")
+lines(density(kappa[,3]), lwd = 2,
+      col = "firebrick4")
+lines(density(kappa[,4]), lwd = 2,
+      col = "dodgerblue4")
+lines(density(kappa[,5]), lwd = 2,
+      col = "mediumorchid4")
+lines(density(kappa[,6]), lwd = 2,
+      col = "khaki4")
+abline(v = 0, lty = 2, col = "blue")
+abline(h = 0, lty = 1, col = "black")
+grid()
+legend("topleft", 
+       legend = colnames(Y),
+       col = c("darkolivegreen4", "darkorange4", "firebrick4", 
+               "dodgerblue4", "mediumorchid4", "khaki4"), 
+       lwd = c(2, 2, 2, 2, 2, 2),
+       cex = 1)
+
+dev.off()
+
+## Diagnostics of model (c)
+
+load("mcmc/mcmc_b.RData")
+
+pdf("images/trace_c.pdf")
+plot(mcmc_c)
+dev.off()
+
+mcmc <- as.matrix(mcmc_c[[1]])
+
+png("images/acf_c.png", 
+    width = 7000, 
+    height = 6000,
+    res = 100, 
+    units = "px")
+par(mfrow = c(4, 6), mar = c(1,1,1,1))
+for (i in 1:ncol(mcmc))
+  acf(mcmc[,i], ylab = colnames(mcmc)[i])
+title("ACF Plots", outer = TRUE)
+dev.off()
+
+## Diagnostic Plots
+
+load("mcmc/mcmc_c.RData")
+
+pdf("images/trace_c.pdf")
+plot(mcmc_c)
+dev.off()
+
+mcmc <- as.matrix(mcmc_c[[1]])
+
+png("images/acf_c.png", 
+    width = 7000, 
+    height = 6000,
+    res = 100, 
+    units = "px")
+par(mfrow = c(4, 3), mar = c(1,1,1,1))
+for (i in 1:ncol(mcmc))
+  acf(mcmc[,i], ylab = colnames(mcmc)[i])
+title("ACF Plots", outer = TRUE)
+dev.off()
 

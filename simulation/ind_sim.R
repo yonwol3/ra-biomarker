@@ -73,7 +73,7 @@ for (i in 1:n_sim) {
                    a=0, 
                    r= 10^6)
   
-  stan_fit<- stan(data = stan_dat, file = "Stan/simulation_one_outcome.stan", 
+  stan_fit<- stan(data = stan_dat, file = "stan/ind_sim.stan", 
                   chains = 1, iter = 4000, warmup = 2000)
   
   # Extract summary statistics

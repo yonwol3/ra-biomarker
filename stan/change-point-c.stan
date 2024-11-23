@@ -15,7 +15,7 @@ data {
   vector[K] U[N];
   vector[N] t;
   vector[N] g;
-  vector<lower=L>[K] Y_obs[N];
+  vector<lower=L, upper=U>[K] Y_obs[N];
 
   // hyperparameters
   vector[K] a;
@@ -40,9 +40,6 @@ parameters {
   vector<lower=0>[K] sigma_0;
   vector<lower=0>[K] sigma_e;
   vector<lower=-20,upper=5>[K] kappa;
-  
-  // LOD
-  vector<lower=U>[K] Y_max[N];
 
 }
 
@@ -59,7 +56,6 @@ model {
   
   // Transformed Data
   vector[K] eta[N];
-  vector[K] Y_full[N];
 
   // Random Intercept
   alpha ~ multi_normal(mu, Sigma_0);
@@ -68,9 +64,6 @@ model {
   for (i in 1:N) {
     
     for (k in 1:K) {
-
-      // impute censored values
-      Y_full[i,k] = D_obs[i,k]*Y_obs[i,k] + D_max[i,k]*Y_max[i,k];
       
       // change point 
       eta[i,k] = alpha[id[i],k] + beta1[k]*g[i] + beta2[k]*t[i] + gamma[k]*g[i]*fdim(t[i],kappa[k]);
@@ -80,8 +73,7 @@ model {
   }
   
   // Sample Data
-  Y_full ~ multi_normal_cholesky(eta, Sigma_e);
-  Y_max ~ multi_normal_cholesky(eta, Sigma_e);
+  Y_obs ~ multi_normal_cholesky(eta, Sigma_e);
 
   // Priors
   mu ~ multi_normal(a, R);

@@ -74,7 +74,7 @@ stan_dat <- list(
 
 stan_fit <- stan(
   data = stan_dat,
-  file = "Stan/multi_sim.stan",
+  file = "stan/multi_sim.stan",
   chains = 1,
   iter = 4000,
   warmup = 2000

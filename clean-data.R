@@ -8,9 +8,9 @@ require(plyr)
 require(tidyverse)
 
 ## Data Cleaning
-#setwd("~/Dropbox/Projects/RA-Biomarker/")
+setwd("~/Dropbox/Projects/RA-Biomarker/")
 
-raDat <- read.delim("forKevin.txt", stringsAsFactors = FALSE)
+raDat <- read.delim("data/forKevin.txt", stringsAsFactors = FALSE)
 names(raDat) <- tolower(names(raDat))
 
 raDat_case <- subset(raDat, diagnosis == "RA")
@@ -66,4 +66,4 @@ minY <- apply(logY, 2, min)
 
 # Cleaned Data
 clean <- data.frame(time, bage, fem, nw, famhx, subj_id, study_id, diagnosis, Y)
-write.csv(clean, "clean.csv")
+write.csv(clean, "data/clean.csv")

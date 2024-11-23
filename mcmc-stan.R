@@ -23,18 +23,32 @@ standata <- list(N = N, M = M, K = K, Y_obs = logY, L = L, U = U,
                  D_min = cens_min, D_max = cens_max, D_obs = (1 - cens_max)*(1 - cens_min),
                  t = time, g = diagnosis, id = subj_id, a = a, b = b, S = S, R = R)
 
+# Censoring Above and Below LOD
+
 stanmodel_a <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-a.stan", model_name = "stanmodel_a")
-samples_a <- sampling(stanmodel_a, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_bata = FALSE)
+samples_a <- sampling(stanmodel_a, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_cata = FALSE)
 mcmc_a <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_a, pars = c(paste0("gamma[", 1:K, "]"),
                                                                             paste0("kappa[", 1:K, "]")),
                                                         permuted = FALSE), 2, coda::mcmc))
 save(mcmc_a, file = "mcmc/mcmc_a.RData")
 summary(mcmc_a)
 
+# Censoring Above LOD
+
 stanmodel_b <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-b.stan", model_name = "stanmodel_b")
-samples_b <- sampling(stanmodel_b, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_bata = FALSE)
+samples_b <- sampling(stanmodel_b, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_cata = FALSE)
 mcmc_b <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_b, pars = c(paste0("gamma[", 1:K, "]"), 
                                                                             paste0("kappa[", 1:K, "]")), 
                                                         permuted = FALSE), 2, coda::mcmc))
 save(mcmc_b, file = "mcmc/mcmc_b.RData")
 summary(mcmc_b)
+
+# Truncation
+
+stanmodel_c <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-d.stan", model_name = "stanmodel_c")
+samples_c <- sampling(stanmodel_c, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_cata = FALSE)
+mcmc_c <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_c, pars = c(paste0("gamma[", 1:K, "]"), 
+                                                                            paste0("kappa[", 1:K, "]")), 
+                                                        permuted = FALSE), 2, coda::mcmc))
+save(mcmc_c, file = "mcmc/mcmc_c.RData")
+summary(mcmc_c)
