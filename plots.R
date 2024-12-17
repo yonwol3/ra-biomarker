@@ -13,10 +13,12 @@ library(splines)
 library(ggplot2)
 library(RColorBrewer)
 library(gridExtra)
+library(ggpubr)
 
 # Reading data cleaning R file
-setwd("~/Dropbox/Projects/RA-Biomarker/")
-source("~/Github/ra-biomarker/clean-data.R")
+# setwd("~/Dropbox/Projects/RA-Biomarker/")
+# source("~/Github/ra-biomarker/clean-data.R")
+source("clean-data.R")
 
 # Naming serum antibodies correctly
 colnames(Y) <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
@@ -38,6 +40,7 @@ outcome_vars <-colnames(Y)
 
 # Color palette for outcomes (Set1 is suitable for up to 9 distinct colors)
 outcome_colors <- brewer.pal(6, "Set1")
+outcome_colors[6] <- "#F781BF" # replace the yellow color
 names(outcome_colors) <- outcome_vars
 
 # Convert 'diagnosis' to a factor with explicit levels and labels
@@ -100,7 +103,7 @@ for (i in seq_along(outcome_vars)) {
               size = 1) +
     # Labels and title
     labs(title = paste(outcome_var, "Serum Levels over Time with Smoothing Spline"),
-         x = "Time",
+         x = "Time Prior to Diagnosis ",
          y = outcome_var) +
     # Minimal theme for a clean look
     theme_minimal() +
@@ -113,7 +116,10 @@ for (i in seq_along(outcome_vars)) {
   
 }
 
-grid.arrange(grobs = plot_list, ncol = 2)
+
+ggarrange(plot_list[[1]],plot_list[[2]], plot_list[[3]],
+          plot_list[[4]],plot_list[[5]], plot_list[[6]], nrow = 3, ncol = 2, 
+          legend="right",align = "v", common.legend = TRUE)
 
 ## Changepoint Density Plot
 
