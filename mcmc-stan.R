@@ -26,7 +26,8 @@ standata <- list(N = N, M = M, K = K, Y_obs = logY, L = L, U = U,
 # Censoring Above and Below LOD
 
 stanmodel_a <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-a.stan", model_name = "stanmodel_a")
-samples_a <- sampling(stanmodel_a, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_cata = FALSE)
+samples_a <- sampling(stanmodel_a, data = standata, iter = 30000, warmup = 5000, 
+                      chains = 1, thin = 25, check_data = FALSE)
 mcmc_a <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_a, pars = c(paste0("gamma[", 1:K, "]"),
                                                                             paste0("kappa[", 1:K, "]")),
                                                         permuted = FALSE), 2, coda::mcmc))
@@ -36,7 +37,8 @@ summary(mcmc_a)
 # Censoring Above LOD
 
 stanmodel_b <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-b.stan", model_name = "stanmodel_b")
-samples_b <- sampling(stanmodel_b, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_cata = FALSE)
+samples_b <- sampling(stanmodel_b, data = standata, iter = 30000, warmup = 5000, 
+                      chains = 1, thin = 25, check_data = FALSE)
 mcmc_b <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_b, pars = c(paste0("gamma[", 1:K, "]"), 
                                                                             paste0("kappa[", 1:K, "]")), 
                                                         permuted = FALSE), 2, coda::mcmc))
@@ -45,8 +47,9 @@ summary(mcmc_b)
 
 # Truncation
 
-stanmodel_c <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-d.stan", model_name = "stanmodel_c")
-samples_c <- sampling(stanmodel_c, data = standata, iter = 20000, warmup = 5000, chains = 1, thin = 15, check_cata = FALSE)
+stanmodel_c <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-c.stan", model_name = "stanmodel_c")
+samples_c <- sampling(stanmodel_c, data = standata, iter = 30000, warmup = 5000, 
+                      chains = 1, thin = 25, check_data = FALSE)
 mcmc_c <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_c, pars = c(paste0("gamma[", 1:K, "]"), 
                                                                             paste0("kappa[", 1:K, "]")), 
                                                         permuted = FALSE), 2, coda::mcmc))
