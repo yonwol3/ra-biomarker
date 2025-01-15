@@ -101,10 +101,11 @@ for (i in seq_along(outcome_vars)) {
               color = color, 
               linetype = "dashed", 
               size = 1) +
+    geom_vline(xintercept = 0, linetype="dashed") +
     # Labels and title
     labs(title = paste(outcome_var, "Serum Levels over Time with Smoothing Spline"),
          x = "Time Prior to Diagnosis ",
-         y = outcome_var) +
+         y = paste(outcome_var)) +
     # Minimal theme for a clean look
     theme_minimal() +
     # Center the plot title and remove legend title
