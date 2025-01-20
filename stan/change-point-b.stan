@@ -8,7 +8,6 @@ data {
   int id[N];
   
   // data
-  vector[K] D_min[N];
   vector[K] D_max[N];
   vector[K] D_obs[N];
   vector[K] L[N];
@@ -27,7 +26,6 @@ data {
 
 parameters {
   
-
   // mean function
   vector[K] mu;
   vector[K] alpha[M];
@@ -42,7 +40,7 @@ parameters {
   vector<lower=-20,upper=5>[K] kappa;
   
   // LOD
-  vector<lower=U>[K] Y_max[N];
+  vector<lower=L>[K] Y_max[N];
 
 }
 
@@ -50,8 +48,8 @@ transformed parameters {
 
   cov_matrix[K] Sigma_0;
   matrix[K,K] Sigma_e;
-  Sigma_0 = diag_matrix(sigma_0^2);
-  Sigma_e = diag_pre_multiply(sigma_e^2, corr_e);
+  Sigma_0 = diag_matrix(square(sigma_0));
+  Sigma_e = diag_pre_multiply(sigma_e, corr_e);
 
 }
 
@@ -60,7 +58,7 @@ model {
   // Transformed Data
   vector[K] eta[N];
   vector[K] Y_full[N];
-
+  
   // Random Intercept
   alpha ~ multi_normal(mu, Sigma_0);
   
@@ -79,9 +77,10 @@ model {
     
   }
   
-  // Sample Data
-  Y_full ~ multi_normal_cholesky(eta, Sigma_e);
-  Y_max ~ multi_normal_cholesky(eta, Sigma_e);
+  // Likelihood
+  Y_obs ~ multi_normal_cholesky(eta, Sigma_e);
+  Y_obs ~ multi_normal_cholesky(eta, Sigma_e);
+
 
   // Priors
   mu ~ multi_normal(a, R);
@@ -92,6 +91,7 @@ model {
   corr_e ~ lkj_corr_cholesky(1);
   sigma_e ~ cauchy(0, 10);
   sigma_0 ~ cauchy(0, 10);
+
   kappa ~ uniform(-20, 10);
 
 }
