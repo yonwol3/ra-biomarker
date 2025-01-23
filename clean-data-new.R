@@ -10,13 +10,11 @@ file_path <- "~/Dropbox/Projects/ra-biomarker/Data/KevinDat2.xlsx"
 dat_2raw <- read_xlsx(file_path)
 colnames(dat_2raw) <- tolower(colnames(dat_2raw))
 
-biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu","aptivapad1igg_≥5#00au","aptivapad2igg_≥5#00au",
-              "aptivapad3igg_≥5#00au","aptivapad4igg_≥5#00au","aptivapad6igg_≥5#00au","aptiva_acpafsiggvimentin2_≥5#00au",
-              "aptiva_acpafsigghistone2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au","aptiva_acpafsiggvimentin1_≥5#00au",
-              "aptivapad1iga_≥5#00au","aptivapad2iga_≥5#00au","aptivapad3iga_≥5#00au","aptivapad4iga_≥5#00au",
-              "aptivapad6iga_≥5#00au","aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigahistone2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au",
-              "aptiva_acpafsigahistone1_≥5#00au","aptiva_acpafsigavimentin1_≥5#00au","quantalitecarpigg_≥20au",
-              "quantalitecarpiga_≥20au","quantaflashrfiga_≥20#0cu_a","quantaflashrfigm_≥5#0iuml_a")
+biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
+              "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
+              "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
+              "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
+              "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
 
 dat_2 <- dat_2raw %>% 
   dplyr::rename(diagnosis=casecontrol, 
@@ -37,6 +35,7 @@ dat_2 <- arrange(dat_2, as.numeric(subj_id), sampnum) %>% drop_na(all_of(biomark
 
 # Outcome matrix
 Y <- as.matrix(subset(dat_2, select = biomarkers))
+Y <- apply(Y, 2, function(z) ifelse(z == 0, 1e-6, z))
 logY <- log(Y) # log transform responses
 
 # Sample numbers
@@ -59,8 +58,8 @@ rm(bage.tmp)
 subj_id <- as.integer(factor(dat_2$subj_id, levels = unique(dat_2$subj_id)))
 study_id <- as.integer(factor(dat_2$study_id, levels = unique(dat_2$study_id)))
 
-cens_max <- apply(Y, 2, function(z) as.numeric(z == max(z, na.rm = T)))
-cens_min <- apply(Y, 2, function(z) as.numeric(z == min(z, na.rm = T)))
-maxY <- apply(Y, 2, max, na.rm = T)
-minY <- apply(Y, 2, min, na.rm = T)
+cens_max <- apply(logY, 2, function(z) as.numeric(z == max(z, na.rm = T)))
+cens_min <- apply(logY, 2, function(z) as.numeric(z == min(z, na.rm = T)))
+maxY <- apply(logY, 2, max, na.rm = T)
+minY <- apply(logY, 2, min, na.rm = T)
 
