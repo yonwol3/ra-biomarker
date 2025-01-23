@@ -40,7 +40,7 @@ parameters {
   vector<lower=-20,upper=5>[K] kappa;
   
   // LOD
-  vector<lower=L>[K] Y_max[N];
+  vector<lower=U>[K] Y_max[N];
 
 }
 
