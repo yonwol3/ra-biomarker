@@ -79,7 +79,7 @@ model {
   
   // Likelihood
   Y_obs ~ multi_normal_cholesky(eta, Sigma_e);
-  Y_obs ~ multi_normal_cholesky(eta, Sigma_e);
+  Y_max ~ multi_normal_cholesky(eta, Sigma_e);
 
 
   // Priors

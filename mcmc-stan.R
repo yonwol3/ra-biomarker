@@ -27,7 +27,7 @@ standata <- list(N = N, M = M, K = K, Y_obs = Y, L = L, U = U,
 # Truncation
 
 stanmodel_trunc <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-trunc.stan", model_name = "stanmodel_trunc")
-samples_trunc <- sampling(stanmodel_a, data = standata, iter = 30000, warmup = 5000, 
+samples_trunc <- sampling(stanmodel_trunc, data = standata, iter = 30000, warmup = 5000, 
                           chains = 1, thin = 25, check_data = FALSE)
 mcmc_trunc <- do.call(mcmc.list, plyr::alply(rstan::extract(samples_trunc, 
                                                             pars = c(paste0("gamma[", 1:K, "]"), 
