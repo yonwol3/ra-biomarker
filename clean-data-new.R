@@ -1,13 +1,23 @@
 #-----------------------#
 # dataset 2 cleaning
 #-----------------------#
-
+library(Microsoft365R)
 library(readxl)
 library(tidyverse)
 
-file_path <- "~/Dropbox/Projects/ra-biomarker/Data/KevinDat2.xlsx"
+#file_path <- "~/Dropbox/Projects/ra-biomarker/Data/KevinDat2.xlsx"
+#dat_2raw <- read_xlsx(file_path)
 
-dat_2raw <- read_xlsx(file_path)
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/KevinDat2.xlsx"
+temp_file <- tempfile(fileext = ".xlsx")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+dat_2raw<- read_xlsx(temp_file)
+unlink(temp_file)
 colnames(dat_2raw) <- tolower(colnames(dat_2raw))
 
 biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
@@ -58,8 +68,8 @@ rm(bage.tmp)
 subj_id <- as.integer(factor(dat_2$subj_id, levels = unique(dat_2$subj_id)))
 study_id <- as.integer(factor(dat_2$study_id, levels = unique(dat_2$study_id)))
 
-cens_max <- apply(logY, 2, function(z) as.numeric(z == max(z, na.rm = T)))
-cens_min <- apply(logY, 2, function(z) as.numeric(z == min(z, na.rm = T)))
-maxY <- apply(logY, 2, max, na.rm = T)
-minY <- apply(logY, 2, min, na.rm = T)
+cens_max <- apply(logY, 2, function(z) as.numeric(z == max(z, na.rm = T))) # binary yes/no
+cens_min <- apply(logY, 2, function(z) as.numeric(z == min(z, na.rm = T))) # binary yes/no
+maxY <- apply(logY, 2, max, na.rm = T) # max value for each biomarker vector
+minY <- apply(logY, 2, min, na.rm = T) # min value for each biomarker vector
 
