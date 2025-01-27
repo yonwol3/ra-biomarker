@@ -5,9 +5,11 @@ library(Microsoft365R)
 library(readxl)
 library(tidyverse)
 
+# Kevin's loading code
 #file_path <- "~/Dropbox/Projects/ra-biomarker/Data/KevinDat2.xlsx"
 #dat_2raw <- read_xlsx(file_path)
 
+# Yonatan's loading code
 onedrive<- get_business_onedrive()
 file_path <- "Attachments/KevinDat2.xlsx"
 temp_file <- tempfile(fileext = ".xlsx")

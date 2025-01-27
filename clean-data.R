@@ -6,11 +6,23 @@
 
 require(plyr)
 require(tidyverse)
+library(Microsoft365R)
 
 ## Data Cleaning
-setwd("~/Dropbox/Projects/RA-Biomarker/")
 
-raDat <- read.delim("data/forKevin.txt", stringsAsFactors = FALSE)
+#--------Kevin's loading code--------------------------------------#
+#setwd("~/Dropbox/Projects/RA-Biomarker/")
+# raDat <- read.delim("data/forKevin.txt", stringsAsFactors = FALSE)
+#------------------------------------------------------------------#
+
+#-------Yonatan's loading code-------------------------------------------#
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/forKevin.txt"
+temp_file <- tempfile(fileext = ".txt")
+onedrive$download_file(src = file_path,dest = temp_file,overwrite = TRUE)
+raDat<- read.delim(temp_file, stringsAsFactors=F)
+unlink(temp_file)
+#-------------------------------------------------------------------------#
 names(raDat) <- tolower(names(raDat))
 
 raDat_case <- subset(raDat, diagnosis == "RA")

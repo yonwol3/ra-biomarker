@@ -14,7 +14,7 @@ library(naniar)
 library(mcmcse)
 
 # Set working directory
-setwd("~/Dropbox/Projects/RA-Biomarker/")
+#setwd("~/Dropbox/Projects/RA-Biomarker/")
 
 hpd = function(x, alpha = 0.05) {
   n = length(x)
@@ -26,38 +26,99 @@ hpd = function(x, alpha = 0.05) {
   c(x[k], x[n - m + k])
 }
 
-## Table 1
-
-library(tidyverse)
-library(labelled)
-library(table1)
-library(naniar)
-
+# Load the dataframes
 source("clean-data.R")
+source("clean-data-new.R")
 
-dat <- clean
+clean$agediag<-raDat$agediag # adding mean age at diagnosis from raDat
+dat_2$agediag<-dat_2$age-dat_2$t_yrs # age at diagnosis new dataset
 
-dat <- dat%>%
-  dplyr::rename('RF IgA'= igarfconc_ , 
-                'RF IgM'= igmrfconc_ , 
-                'RF IgG'= iggrfconc_ , 
-                'ACPA IgA'= igaccpavgconc, 
-                'ACPA IgM'= igmccpavgconc, 
-                'ACPA IgG'= iggccpavgconc)
+# covariate elements need some renaming
 
-dat$fem<-factor(as.character(dat$fem), levels=c(0,1), labels=c("M", "F")) # sex 
-dat$nw<-factor(as.character(dat$nw), levels = c(0,1), labels=c("White", "Non-White")) # nowhite status
-dat$famhx<- factor(as.character(dat$famhx), levels = c(0,1), labels=c("No", "Yes")) #family RA history
-dat$diagnosis<- factor(dat$diagnosis, levels = c(0,1), labels=c("No-RA", "RA"))
-dat <- set_variable_labels(dat,
-                           fem = "Sex",
-                           nw= "Race",
-                           famhx = "Family RA History")
+clean$fem=factor(clean$fem,labels =c("Male","Female"))
+clean$nw=factor(clean$nw,labels =c("White","Non-white"))
+clean$eversmoke=raDat$eversmoke # smoking status from raDat
+clean$diagnosis= factor(clean$diagnosis,labels=c("No RA", "RA"))
+clean <- clean %>%
+  dplyr::mutate(
+    famhx_c = case_when(
+      famhx == 0 ~ "No",
+      famhx == 1 ~ "Yes",
+      is.na(famhx) ~ "Not available"
+    ), 
+    smoking= case_when(
+      eversmoke == "No"~ "No",
+      eversmoke == "Yes"~ "Yes",
+      TRUE ~ "Not available"  
+    )
+  )
+
+dat_2$gender=factor(dat_2$gender,levels=c("M","F"),labels =c("Male","Female"))
+dat_2$nw=ifelse(dat_2$race_ethnic=="W",0,1)# non-white indicator
+dat_2$nw=factor(dat_2$nw,labels =c("White","Non-white")) 
+dat_2$diagnosis=factor(dat_2$diagnosis, levels=c("Control","Case"), labels=c("No RA", "RA"))
+
+dat_2 <- dat_2 %>%
+  dplyr::mutate(
+    famhx_c = case_when(
+      familyhxra == "No" ~ "No",
+      familyhxra == "Yes"~ "Yes",
+      TRUE ~ "Not available"
+    ), 
+    smoking= case_when(
+      eversmoke == "No"~ "No",
+      eversmoke == "Yes"~ "Yes",
+      TRUE ~ "Not available"  
+    )
+  )
+
+# Take mean values of biomarkes per subject to create table-1
+
+clean_tb1 <- clean %>% 
+  group_by(subj_id) %>%
+  dplyr::summarise(
+    gender = first(fem),
+    race = first(nw),
+    famhx_c = first(famhx_c),
+    diagnosis=first(diagnosis),
+    smoking=first(smoking),
+    mean_agediag = mean(agediag),
+    across(starts_with("ig"), ~ mean(.x, na.rm = TRUE), .names = "mean_{col}"),
+  )
+
+dat_2_tb1<-dat_2 %>% 
+  group_by(subj_id) %>%
+  dplyr::summarise(
+    gender = first(gender),
+    race = first(nw),
+    famhx_c = first(famhx_c),
+    smoking=first(smoking),
+    diagnosis=first(diagnosis),
+    mean_agediag = mean(agediag),
+    across(starts_with("apti"), ~ mean(.x, na.rm = TRUE), .names = "mean_{col}"),
+  )
+
+
+# specifying variable names shown in the final table-1 output
+
+clean_tb1 <- set_variable_labels(clean_tb1,
+                           gender= "Sex",
+                           race= "Race",
+                           famhx_c = "Family RA History",
+                           smoking= "Eversmoke", 
+                           mean_agediag="Age at Diagnosis",
+                           mean_igarfconc_="RF IgA",
+                           mean_igmrfconc_="RF IgM",
+                           mean_iggrfconc_="RF IgG",
+                           mean_igaccpavgconc="ACPA IgA",
+                           mean_igmccpavgconc="ACPA IgM",
+                           mean_iggccpavgconc="ACPA IgG")
 
 
 # Then create your Table 1
-covariates <- c("fem", "nw")
-biomarkers <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA","ACPA IgM","ACPA IgG" )
+covariates <- c("gender", "race","famhx_c","smoking")
+biomarkers <- c("mean_agediag","mean_igarfconc_", "mean_igmrfconc_", "mean_iggrfconc_", 
+                "mean_igaccpavgconc","mean_igmccpavgconc","mean_iggccpavgconc" )
 t1_variables<-c(covariates,biomarkers)
 categorical_vars <-covariates
 
@@ -68,11 +129,15 @@ t1_variables_backticked <- paste0("`", t1_variables, "`")
 # Create the table with the corrected formula
 t1 <- table1(
   as.formula(paste0("~", paste0(t1_variables_backticked, collapse = "+"), "|", "diagnosis")),
-  data = dat,
+  data = clean_tb1,
   caption = "Table1: Descriptive summary of data by RA status"
 )
 
 t1  # Display the table
+
+
+
+
 
 ## Table 
 
