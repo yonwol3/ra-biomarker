@@ -75,3 +75,61 @@ cens_min <- apply(logY, 2, function(z) as.numeric(z == min(z, na.rm = T))) # bin
 maxY <- apply(logY, 2, max, na.rm = T) # max value for each biomarker vector
 minY <- apply(logY, 2, min, na.rm = T) # min value for each biomarker vector
 
+#----------------------------------------------------------------#
+#Fun that outputs stan objects from input of a pair of biomarker
+#----------------------------------------------------------------#
+
+create_biomarker_objects <- function(iga_biomarker, igg_biomarker, data = dat_2) {
+  
+  strip_suffix <- function(x) {
+    x_no_suffix <- sub("_≥5#00.*", "", x)  # Remove everything after '_≥5#00'
+    x_no_suffix <- sub("iga", "", x_no_suffix) # Remove 'iga'
+    x_no_suffix <- sub("igg", "", x_no_suffix) # Remove 'igg'
+    x_no_suffix
+  }
+  
+  XX_iga <- strip_suffix(iga_biomarker)
+  XX_igg <- strip_suffix(igg_biomarker)
+  
+  if (XX_iga != XX_igg) {
+    stop("The IgA and IgG biomarker names do not share the same root identifier.")
+  }
+  XX <- XX_iga
+  
+  if (!all(c(iga_biomarker, igg_biomarker) %in% names(data))) {
+    stop("The provided biomarker columns do not exist in the dataset.")
+  }
+  
+  Y_XX <- as.matrix(data[, c(iga_biomarker, igg_biomarker)])
+  Y_XX <- apply(Y_XX, 2, function(z) ifelse(z == 0, 1e-6, z))
+  
+  logY_XX <- log(Y_XX)
+  N_XX <- nrow(Y_XX)                       
+  M_XX <- nlevels(factor(data$subj_id))    
+  K_XX <- ncol(Y_XX)                       
+  
+  cens_max_XX <- apply(logY_XX, 2, function(z) as.numeric(z == max(z, na.rm = TRUE)))
+  cens_min_XX <- apply(logY_XX, 2, function(z) as.numeric(z == min(z, na.rm = TRUE)))
+  
+  maxY_XX <- apply(logY_XX, 2, max, na.rm = TRUE)
+  minY_XX <- apply(logY_XX, 2, min, na.rm = TRUE)
+  
+  
+  result_list <- list(
+    Y = Y_XX,
+    logY = logY_XX,
+    N = N_XX,
+    M = M_XX,
+    K = K_XX,
+    cens_max = cens_max_XX,
+    cens_min = cens_min_XX,
+    maxY = maxY_XX,
+    minY = minY_XX
+  )
+  
+  # Name the list as XX
+  names(result_list) <- paste0(names(result_list), "_", XX)
+  
+  return(result_list)
+}
+
