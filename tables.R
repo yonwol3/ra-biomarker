@@ -12,10 +12,9 @@ library(labelled)
 library(table1)
 library(naniar)
 library(mcmcse)
-library(gt)
 
 # Set working directory
-#setwd("~/Dropbox/Projects/RA-Biomarker/")
+setwd("~/Dropbox/Projects/RA-Biomarker/")
 
 hpd = function(x, alpha = 0.05) {
   n = length(x)
@@ -27,255 +26,53 @@ hpd = function(x, alpha = 0.05) {
   c(x[k], x[n - m + k])
 }
 
-# Load the dataframes
+## Table 1
+
+library(tidyverse)
+library(labelled)
+library(table1)
+library(naniar)
+
 source("clean-data.R")
-source("clean-data-new.R")
 
-clean$agediag<-raDat$agediag # adding mean age at diagnosis from raDat
-dat_2$agediag<-dat_2$age-dat_2$t_yrs # age at diagnosis new dataset
+dat <- clean
 
-# covariate elements need some renaming
+dat <- dat%>%
+  dplyr::rename('RF IgA'= igarfconc_ , 
+                'RF IgM'= igmrfconc_ , 
+                'RF IgG'= iggrfconc_ , 
+                'ACPA IgA'= igaccpavgconc, 
+                'ACPA IgM'= igmccpavgconc, 
+                'ACPA IgG'= iggccpavgconc)
 
-clean$fem=factor(clean$fem,labels =c("Male","Female"))
-clean$nw=factor(clean$nw,labels =c("White","Non-white"))
-clean$eversmoke=raDat$eversmoke # smoking status from raDat
-clean$diagnosis= factor(clean$diagnosis,labels=c("No RA", "RA"))
-clean <- clean %>%
-  dplyr::mutate(
-    famhx_c = case_when(
-      famhx == 0 ~ "No",
-      famhx == 1 ~ "Yes",
-      is.na(famhx) ~ "Not available"
-    ), 
-    smoking= case_when(
-      eversmoke == "No"~ "No",
-      eversmoke == "Yes"~ "Yes",
-      TRUE ~ "Not available"  
-    )
-  )
-
-dat_2$gender=factor(dat_2$gender,levels=c("M","F"),labels =c("Male","Female"))
-dat_2$nw=ifelse(dat_2$race_ethnic=="W",0,1)# non-white indicator
-dat_2$nw=factor(dat_2$nw,labels =c("White","Non-white")) 
-dat_2$diagnosis=factor(dat_2$diagnosis, levels=c("Control","Case"), labels=c("No RA", "RA"))
-
-dat_2 <- dat_2 %>%
-  dplyr::mutate(
-    famhx_c = case_when(
-      familyhxra == "No" ~ "No",
-      familyhxra == "Yes"~ "Yes",
-      TRUE ~ "Not available"
-    ), 
-    smoking= case_when(
-      eversmoke == "No"~ "No",
-      eversmoke == "Yes"~ "Yes",
-      TRUE ~ "Not available"  
-    )
-  )
-
-# Take mean values of biomarkes per subject to create table-1
-
-clean_tb1 <- clean %>% 
-  group_by(subj_id) %>%
-  dplyr::summarise(
-    gender = first(fem),
-    race = first(nw),
-    famhx_c = first(famhx_c),
-    diagnosis=first(diagnosis),
-    smoking=first(smoking),
-    mean_agediag = mean(agediag),
-    across(starts_with("ig"), ~ mean(.x, na.rm = TRUE), .names = "mean_{col}"),
-  )
-
-dat_2_tb1<-dat_2 %>% 
-  group_by(subj_id) %>%
-  dplyr::summarise(
-    gender = first(gender),
-    race = first(nw),
-    famhx_c = first(famhx_c),
-    smoking=first(smoking),
-    diagnosis=first(diagnosis),
-    mean_agediag = mean(agediag),
-    across(starts_with("apti"), ~ mean(.x, na.rm = TRUE), .names = "mean_{col}"),
-  )
-
-
-# specifying variable names shown in the final table-1 output
-
-clean_tb1 <- set_variable_labels(clean_tb1,
-                           gender= "Sex",
-                           race= "Race",
-                           famhx_c = "Family RA History",
-                           smoking= "Eversmoke", 
-                           mean_agediag="Age at Diagnosis",
-                           mean_igarfconc_="RF IgA",
-                           mean_igmrfconc_="RF IgM",
-                           mean_iggrfconc_="RF IgG",
-                           mean_igaccpavgconc="ACPA IgA",
-                           mean_igmccpavgconc="ACPA IgM",
-                           mean_iggccpavgconc="ACPA IgG")
+dat$fem<-factor(as.character(dat$fem), levels=c(0,1), labels=c("M", "F")) # sex 
+dat$nw<-factor(as.character(dat$nw), levels = c(0,1), labels=c("White", "Non-White")) # nowhite status
+dat$famhx<- factor(as.character(dat$famhx), levels = c(0,1), labels=c("No", "Yes")) #family RA history
+dat$diagnosis<- factor(dat$diagnosis, levels = c(0,1), labels=c("No-RA", "RA"))
+dat <- set_variable_labels(dat,
+                           fem = "Sex",
+                           nw= "Race",
+                           famhx = "Family RA History")
 
 
 # Then create your Table 1
-df1 <-clean_tb1[,-1] %>% 
-  rename(group=diagnosis)# removing ID column 
-df2 <-dat_2_tb1[,-1] %>% 
-  rename(group=diagnosis)
-df1$group=factor(df1$group, labels=c("Non-RA","RA"))
-df2$group=factor(df2$group, labels=c("Non-RA","RA"))
-# 2. Summaries for numeric variables ---------------------------------
-summarize_numeric_vars <- function(data, numeric_vars, group_var) {
-  out_list <- lapply(numeric_vars, function(v) {
-    
-    stat_df <- data %>%
-      group_by(.data[[group_var]]) %>%
-      summarize(
-        mean_val = mean(.data[[v]], na.rm = TRUE),
-        sd_val   = sd(.data[[v]],   na.rm = TRUE),
-        min_val  = min(.data[[v]],  na.rm = TRUE),
-        max_val  = max(.data[[v]],  na.rm = TRUE),
-        med_val  = median(.data[[v]], na.rm = TRUE),
-        .groups  = "drop"
-      ) %>%
-      mutate(
-        MeanSD   = sprintf("%.2f (%.2f)", mean_val, sd_val),
-        MedRange = sprintf("%.2f [%.2f, %.2f]", med_val, min_val, max_val)
-      ) %>%
-      select(all_of(group_var), MeanSD, MedRange)
-    
-    stat_long <- stat_df %>%
-      pivot_longer(
-        cols        = c("MeanSD", "MedRange"),
-        names_to    = "stat",
-        values_to   = "val"
-      ) %>%
-      mutate(
-        stat = ifelse(stat == "MeanSD", "Mean (SD)", "Median [Min, Max]"),
-        var  = v
-      )
-    
-    stat_long
-  })
-  
-  all_numeric <- bind_rows(out_list) %>%
-    pivot_wider(
-      id_cols     = c("var","stat"),
-      names_from  = group_var,
-      values_from = val
-    )
-  
-  return(all_numeric)
-}
-
-# 3. Summaries for categorical variables -----------------------------
-summarize_categorical_vars <- function(data, factor_vars, group_var) {
-  out_list <- lapply(factor_vars, function(v) {
-    
-    dcat <- data %>%
-      group_by(.data[[group_var]], .data[[v]]) %>%
-      tally() %>%
-      ungroup() %>%
-      group_by(.data[[group_var]]) %>%
-      mutate(percent = round(100 * n / sum(n), 1)) %>%
-      ungroup() %>%
-      mutate(val = paste0(n, " (", percent, "%)")) %>%
-      select(all_of(group_var), level = all_of(v), val)
-    
-    dcat_long <- dcat %>%
-      rename(stat = level) %>%
-      mutate(var = v)
-    
-    dcat_wide <- dcat_long %>%
-      pivot_wider(
-        id_cols     = c("var","stat"),
-        names_from  = group_var,
-        values_from = "val"
-      )
-    
-    dcat_wide
-  })
-  
-  all_cats <- bind_rows(out_list)
-  return(all_cats)
-}
-
-# 4. One-sample summarizer ------------------------------------------
-make_summary_one_sample <- function(data, group_var = "group") {
-  numeric_vars <- names(data)[sapply(data, is.numeric)]
-  factor_vars  <- names(data)[sapply(data, is.character) | sapply(data, is.factor)]
-  numeric_vars <- setdiff(numeric_vars, group_var)
-  factor_vars  <- setdiff(factor_vars, group_var)
-  
-  data[factor_vars] <- lapply(data[factor_vars], factor)
-  
-  df_numeric <- NULL
-  if (length(numeric_vars) > 0) {
-    df_numeric <- summarize_numeric_vars(data, numeric_vars, group_var)
-  }
-  
-  df_cat <- NULL
-  if (length(factor_vars) > 0) {
-    df_cat <- summarize_categorical_vars(data, factor_vars, group_var)
-  }
-  
-  combined <- bind_rows(df_numeric, df_cat)
-  return(combined)
-}
-
-# 5. Summarize each sample => rename => combine => fill missing -------
-summary_df1 <- make_summary_one_sample(df1, "group") %>%
-  dplyr::rename(Sample1_RA = RA, Sample1_NonRA = `Non-RA`)
-
-summary_df2 <- make_summary_one_sample(df2, "group") %>%
-  dplyr::rename(Sample2_RA = RA, Sample2_NonRA = `Non-RA`)
-
-combined_table <- full_join(summary_df1, summary_df2, by = c("var","stat")) %>%
-  mutate(across(everything(), ~ ifelse(is.na(.), "-", .)))
-
-# 6. Compute RA / Non-RA sample sizes for each dataset ----------------
-n_sample1_RA     <- sum(df1$group == "RA")
-n_sample1_NonRA  <- sum(df1$group == "Non-RA")
-n_sample2_RA     <- sum(df2$group == "RA")
-n_sample2_NonRA  <- sum(df2$group == "Non-RA")
-
-# 7. Build final GT Table with bold formatting ------------------------
-final_gt_table <- combined_table %>%
-  gt(
-    rowname_col   = "stat",  # row labels (Mean (SD), Female, etc.)
-    groupname_col = "var"    # group each variable together in bold
-  ) %>%
-  tab_spanner(
-    label   = "Sample 1",
-    columns = c("Sample1_RA", "Sample1_NonRA")
-  ) %>%
-  tab_spanner(
-    label   = "Sample 2",
-    columns = c("Sample2_RA", "Sample2_NonRA")
-  ) %>%
-  # Show RA(N=xx) / Non-RA(N=xx) in bold
-  cols_label(
-    Sample1_RA    = md(sprintf("**RA (N=%d)**", n_sample1_RA)),
-    Sample1_NonRA = md(sprintf("**Non-RA (N=%d)**", n_sample1_NonRA)),
-    Sample2_RA    = md(sprintf("**RA (N=%d)**", n_sample2_RA)),
-    Sample2_NonRA = md(sprintf("**Non-RA (N=%d)**", n_sample2_NonRA))
-  ) %>%
-  tab_header(
-    title = md("**Table 1: Descriptive Summary**")
-  ) %>%
-  # Make sure the group labels (your variable names) are bold
-  tab_style(
-    style = cell_text(weight = "bold"),
-    locations = cells_row_groups(groups = everything())
-  ) %>%
-  # Add lines, center columns
-  opt_table_lines(extent = "all") %>%
-  cols_align("center")
-
-# 8. Display the final table
-final_gt_table
+covariates <- c("fem", "nw")
+biomarkers <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA","ACPA IgM","ACPA IgG" )
+t1_variables<-c(covariates,biomarkers)
+categorical_vars <-covariates
 
 
+# Enclose variable names with backticks to handle spaces
+t1_variables_backticked <- paste0("`", t1_variables, "`")
 
+# Create the table with the corrected formula
+t1 <- table1(
+  as.formula(paste0("~", paste0(t1_variables_backticked, collapse = "+"), "|", "diagnosis")),
+  data = dat,
+  caption = "Table1: Descriptive summary of data by RA status"
+)
+
+t1  # Display the table
 
 ## Table 
 

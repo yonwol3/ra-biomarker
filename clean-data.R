@@ -6,23 +6,11 @@
 
 require(plyr)
 require(tidyverse)
-library(Microsoft365R)
 
 ## Data Cleaning
+setwd("~/Documents/RA-Biomarker/")
 
-#--------Kevin's loading code--------------------------------------#
-#setwd("~/Dropbox/Projects/RA-Biomarker/")
-# raDat <- read.delim("data/forKevin.txt", stringsAsFactors = FALSE)
-#------------------------------------------------------------------#
-
-#-------Yonatan's loading code-------------------------------------------#
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/forKevin.txt"
-temp_file <- tempfile(fileext = ".txt")
-onedrive$download_file(src = file_path,dest = temp_file,overwrite = TRUE)
-raDat<- read.delim(temp_file, stringsAsFactors=F)
-unlink(temp_file)
-#-------------------------------------------------------------------------#
+raDat <- read.delim("data/forKevin.txt", stringsAsFactors = FALSE)
 names(raDat) <- tolower(names(raDat))
 
 raDat_case <- subset(raDat, diagnosis == "RA")
@@ -75,6 +63,8 @@ cens_max <- apply(Y, 2, function(z) as.numeric(z == max(z)))
 cens_min <- apply(Y, 2, function(z) as.numeric(z == min(z)))
 maxY <- apply(Y, 2, max)
 minY <- apply(Y, 2, min)
+L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
+U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 
 # Cleaned Data
 clean <- data.frame(time, bage, fem, nw, famhx, subj_id, study_id, diagnosis, Y)
