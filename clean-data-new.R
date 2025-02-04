@@ -1,11 +1,11 @@
 #-----------------------#
 # dataset 2 cleaning
 #-----------------------#
-
 library(readxl)
 library(tidyverse)
 
 file_path <- "~/Documents/RA-Biomarker/Data/KevinDat2.xlsx"
+#dat_2raw <- read_xlsx(file_path)
 
 dat_2raw <- read_xlsx(file_path)
 colnames(dat_2raw) <- tolower(colnames(dat_2raw))
@@ -15,15 +15,6 @@ biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
               "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
               "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
               "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
-
-bio1 <- c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu")
-bio2 <- c("aptivapad1iga_≥5#00au","aptivapad1igg_≥5#00au")
-bio3 <- c("aptivapad4iga_≥5#00au", "aptivapad4igg_≥5#00au")
-bio4 <- c("aptiva_acpafsigavimentin2_≥5#00au", "aptiva_acpafsiggvimentin2_≥5#00au")
-bio5 <- c("aptiva_acpafsigafibrinogen_≥5#00au", "aptiva_acpafsiggfibrinogen_≥5#00au")
-bio6 <- c("aptiva_acpafsigahistone1_≥5#00au", "aptiva_acpafsigghistone1_≥5#00au")
-
-bio_couple <- list(bio1, bio2, bio3, bio4, bio5, bio6)
 
 dat_2 <- dat_2raw %>% 
   dplyr::rename(diagnosis=casecontrol, 
@@ -42,9 +33,18 @@ dat_2$t_yrs <- dat_2$t_days/365 # changing from days to years
 dat_2[,biomarkers] <- apply(dat_2[,biomarkers], 2, as.numeric)
 dat_2 <- arrange(dat_2, as.numeric(subj_id), sampnum) %>% drop_na(all_of(biomarkers))
 
+for (bio in biomarkers) {
+  
+  q99 <- quantile(c(dat_2[,bio])[[1]], probs = 0.99)
+  dat_2[,bio] <- ifelse(c(dat_2[,bio])[[1]] > q99, q99, 
+                        c(dat_2[,bio])[[1]])
+
+  
+}
+
 # Outcome matrix
 Y <- as.matrix(subset(dat_2, select = biomarkers))
-Y <- apply(Y, 2, function(z) ifelse(z == 0, 1e-16, z))
+Y <- apply(Y, 2, function(z) ifelse(z == 0, 1e-6, z))
 logY <- log(Y) # log transform responses
 
 # Sample numbers
@@ -67,70 +67,8 @@ rm(bage.tmp)
 subj_id <- as.integer(factor(dat_2$subj_id, levels = unique(dat_2$subj_id)))
 study_id <- as.integer(factor(dat_2$study_id, levels = unique(dat_2$study_id)))
 
-cens_max <- apply(Y, 2, function(z) as.numeric(z == max(z, na.rm = T)))
-cens_min <- apply(Y, 2, function(z) as.numeric(z == min(z, na.rm = T)))
-maxY <- apply(Y, 2, max, na.rm = T)
-minY <- apply(Y, 2, min, na.rm = T)
-L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
-U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
-
-create_biomarker_objects <- function(iga_biomarker, igg_biomarker, data = dat_2) {
-  
-  strip_suffix <- function(x) {
-    x_no_suffix <- sub("_≥5#00.*", "", x)  # Remove everything after '_≥5#00'
-    x_no_suffix <- sub("iga", "", x_no_suffix) # Remove 'iga'
-    x_no_suffix <- sub("igg", "", x_no_suffix) # Remove 'igg'
-    x_no_suffix
-  }
-  
-  XX_iga <- strip_suffix(iga_biomarker)
-  XX_igg <- strip_suffix(igg_biomarker)
-  
-  if (XX_iga != XX_igg) {
-    stop("The IgA and IgG biomarker names do not share the same root identifier.")
-  }
-  
-  XX <- XX_iga
-  
-  if (!all(c(iga_biomarker, igg_biomarker) %in% names(data))) {
-    stop("The provided biomarker columns do not exist in the dataset.")
-  }
-  
-  Y_XX <- as.matrix(data[, c(iga_biomarker, igg_biomarker)])
-  Y_XX <- apply(Y_XX, 2, function(z) ifelse(z == 0, 1e-16, z))
-  logY_XX <- log(Y_XX)
-  
-  N_XX <- nrow(Y_XX)                       
-  M_XX <- nlevels(factor(data$subj_id))    
-  K_XX <- ncol(Y_XX)                       
-  
-  cens_max_XX <- apply(Y_XX, 2, function(z) as.numeric(z == max(z, na.rm = TRUE)))
-  cens_min_XX <- apply(Y_XX, 2, function(z) as.numeric(z == min(z, na.rm = TRUE)))
-  
-  maxY_XX <- apply(Y_XX, 2, max, na.rm = TRUE)
-  minY_XX <- apply(Y_XX, 2, min, na.rm = TRUE)
-  
-  L_XX <- matrix(rep(minY_XX, N), ncol = K_XX, byrow = TRUE)
-  U_XX <- matrix(rep(maxY_XX, N), ncol = K_XX, byrow = TRUE)
-  
-  result_list <- list(
-    biomarker = XX,
-    Y = Y_XX,
-    logY = logY_XX,
-    N = N_XX,
-    M = M_XX,
-    K = K_XX,
-    L = L_XX,
-    U = U_XX,
-    cens_max = cens_max_XX,
-    cens_min = cens_min_XX,
-    maxY = maxY_XX,
-    minY = minY_XX
-  )
-  
-  return(result_list)
-  
-}
-
-bio_couple_data <- lapply(bio_couple, function(z) create_biomarker_objects(z[1], z[2], data = dat_2))
+cens_max <- apply(logY, 2, function(z) as.numeric(z == max(z, na.rm = T))) # binary yes/no
+cens_min <- apply(logY, 2, function(z) as.numeric(z == min(z, na.rm = T))) # binary yes/no
+maxY <- apply(logY, 2, max, na.rm = T) # max value for each biomarker vector
+minY <- apply(logY, 2, min, na.rm = T) # min value for each biomarker vector
 
