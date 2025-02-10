@@ -65,7 +65,7 @@ K <- ncol(Y) # number of measurements per sample
 
 # Covariates
 time <- dat_2$t_yrs # time before diagnosis
-fem <- ifelse(dat_2$gender == "F", 1, 0) # indeicator for female
+fem <- ifelse(dat_2$gender == "F", 1, 0) # indicator for female
 nw <- ifelse(dat_2$race_ethnic == "W", 0, 1) # indicator for non-white
 famhx <- ifelse(dat_2$familyhxra == "No", 0, 1)
 bage.tmp <- dat_2$age[unique(dat_2$subj_id)]
