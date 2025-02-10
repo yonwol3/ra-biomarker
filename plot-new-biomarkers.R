@@ -38,6 +38,8 @@ for (i in seq_along(biomarkers)) {
   # Prepare data for plotting
   df_plot <- dat_2[, c("t_yrs", "diagnosis", outcome_var)]
   names(df_plot)[3] <- "outcome"  # Rename the outcome column for consistency
+  #df_plot$outcome <- log(ifelse(df_plot[[outcome_var]] == 0, 0.00001, df_plot[[outcome_var]])) # log transform the outcome
+
   
   # Fit smooth.spline for 'RA'
   df_ra <- df_plot[df_plot$diagnosis == "RA", ]
@@ -79,7 +81,7 @@ for (i in seq_along(biomarkers)) {
               size = 1) +
     geom_vline(xintercept = 0, linetype="dashed") +
     # Labels and title
-    labs(title = "Serum Levels over Time with Smoothing Spline",
+    labs(
          x = "Time Prior to Diagnosis ",
          y = paste(outcome_var)) +
     # Minimal theme for a clean look
@@ -95,8 +97,13 @@ for (i in seq_along(biomarkers)) {
 
 
 ggarrange_args <- c(plot_list[1:12],  nrow = 3, ncol = 4, 
-                    legend = "right", align = "v", common.legend = TRUE) 
-do.call(ggarrange, ggarrange_args)
+                    legend = "right", align = "v", common.legend = TRUE
+                    ) 
+combined_plot<-do.call(ggarrange, ggarrange_args)
+final_plot <- annotate_figure(combined_plot, 
+                              top = text_grob("Serum Levels over Time with Smoothing Spline", 
+                                              face = "bold", size = 14))
+final_plot
 
 #-------------------------------------------#  
 # Density plots from posterior distribution of
