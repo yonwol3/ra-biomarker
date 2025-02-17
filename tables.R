@@ -104,6 +104,41 @@ clean_tb1 <- set_variable_labels(clean_tb1,
                                  mean_igmccpavgconc = "ACPA IgM",
                                  mean_iggccpavgconc = "ACPA IgG")
 
+##### Table-1 just for the original biomarkers for now
+
+render.median.IQR <- function(x, ...) {
+  c('', 
+    `Median (IQR)` = sprintf("%s (%s, %s)", round(median(x),1), 
+                             round(quantile(x, 0.25),1), round(quantile(x, 0.75),1)))
+}
+# Define the variables:
+covariates <- c("gender", "race", "famhx_c", "smoking")
+biomarkers <- c("mean_agediag", "mean_igarfconc_", "mean_igmrfconc_", 
+                "mean_iggrfconc_", "mean_igaccpavgconc", "mean_igmccpavgconc", 
+                "mean_iggccpavgconc")
+t1_variables <- c(covariates, biomarkers)
+
+# If needed, enclose variable names with backticks:
+t1_variables_backticked <- paste0("`", t1_variables, "`")
+
+# Create the table with table1 using our custom continuous renderer:
+t1 <- table1(
+  as.formula(paste0("~", paste(t1_variables_backticked, collapse = "+"), "| diagnosis")),
+  data = clean_tb1,
+  caption = "Table1: Descriptive summary of original sample by RA status",
+  render.cont = render.median.IQR
+)
+
+t1
+
+
+
+#--------------------#
+#
+# table-1 BOTH cohorts
+#
+#---------------------#
+
 # Create Table 1 datasets by removing the subject ID column and renaming 'diagnosis' as 'group'
 df1 <- clean_tb1[, -1] %>% 
   dplyr::rename(group = diagnosis)
@@ -417,3 +452,80 @@ fe.tbl[,16] <- colnames(fix_eff_4)
 colnames(fe.tbl) <- rep(c("Parameter", "Posterior Mean", "MC Std. Err.", "Std. Dev.", "95% HPDI"), 4)
 
 write.csv(fe.tbl, file = "data/table-4.csv")
+
+#------------------------------------------------#
+#
+# change-point+ magnitude(90% prob being >0)
+#
+#------------------------------------------------#
+
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/mcmc_trunc.RData"
+temp_file <- tempfile(fileext = ".RData")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+mcmc_trunc<- get(load(temp_file)[1])
+mcmc<-mcmc_trunc[[1]]
+
+# Number of biomarkers being analyzed
+k <- 6
+
+# Define the time grid
+time_grid <- seq(-20, 10, by = 0.01)
+
+# Extract kappa and gamma from the mcmc data
+kappa <- mcmc[, 7:12]
+gamma <- mcmc[, 1:6]
+
+# Define labels for each dimension
+biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
+time_labels <- as.character(time_grid)
+iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
+
+# Create a 3-dimensional array with named dimensions:
+# Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
+res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
+             dimnames = list(
+               biomarker = biomarker_labels,
+               time = time_labels,
+               iteration = iteration_labels
+             ))
+
+# Loop over biomarkers, time grid, and iterations to fill the array.
+for (b in 1:k) {
+  gamma_b <- gamma[, b]     # gamma values for biomarker b
+  kappa_b <- kappa[, b]     # kappa values for biomarker b
+  
+  for (i in seq_along(time_grid)) {
+    t <- time_grid[i]
+    for (j in 1:nrow(kappa)) {
+      res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
+    }
+  }
+}
+
+# Convert the array to a data frame.
+result_df <- as.data.frame.table(res, responseName = "value")
+colnames(result_df) <- c("biomarker", "time", "iteration", "value")
+
+result_df$time <-as.numeric(as.character(result_df$time))
+
+# Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
+result_df <- result_df %>% 
+  dplyr::group_by(biomarker, time) %>% 
+  dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
+  arrange(desc(prop_positive))
+
+# select time where absolute difference between prop_positive and 0.9 is minimized
+
+closest_threshold <- result_df %>% 
+  dplyr::group_by(biomarker) %>% 
+  dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
+  dplyr::ungroup()%>% 
+  arrange(time)
+
+
+
