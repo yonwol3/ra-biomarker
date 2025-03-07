@@ -33,18 +33,13 @@ dat_2$t_yrs <- dat_2$t_days/365 # changing from days to years
 dat_2[,biomarkers] <- apply(dat_2[,biomarkers], 2, as.numeric)
 dat_2 <- arrange(dat_2, as.numeric(subj_id), sampnum) %>% drop_na(all_of(biomarkers))
 
-for (bio in biomarkers) {
-  
-  q99 <- quantile(c(dat_2[,bio])[[1]], probs = 0.99)
-  dat_2[,bio] <- ifelse(c(dat_2[,bio])[[1]] > q99, q99, 
-                        c(dat_2[,bio])[[1]])
-
-  
-}
-
 # Outcome matrix
 Y <- as.matrix(subset(dat_2, select = biomarkers))
-Y <- apply(Y, 2, function(z) ifelse(z == 0, 1e-6, z))
+colnames(Y) <- c("aptivaccp3iga","aptivaccp3igg", "aptivapad1igg","aptivapad4igg",
+                 "aptiva_acpafsiggvimentin2","aptiva_acpafsiggfibrinogen","aptiva_acpafsigghistone1",
+                 "aptivapad1iga","aptivapad4iga",
+                 "aptiva_acpafsigavimentin2","aptiva_acpafsigafibrinogen","aptiva_acpafsigahistone1")
+# Y <- apply(Y, 2, function(z) ifelse(z == 0, 1e-6, z))
 logY <- log(Y) # log transform responses
 
 # Sample numbers
@@ -55,11 +50,18 @@ K <- ncol(Y) # number of measurements per sample
 # Covariates
 time <- dat_2$t_yrs # time before diagnosis
 fem <- ifelse(dat_2$gender == "F", 1, 0) # indeicator for female
-nw <- ifelse(dat_2$race_ethnic == "W", 0, 1) # indicator for non-white
-famhx <- ifelse(dat_2$familyhxra == "No", 0, 1)
-bage.tmp <- dat_2$age[unique(dat_2$subj_id)]
-bage <- rep(bage.tmp, times = table(dat_2$subj_id))
-diagnosis <- ifelse(dat_2$diagnosis == "RA", 1, 0)
+white <- ifelse(dat_2$race_ethnic == "W", 1, 0) # indicator for white
+black <- ifelse(dat_2$race_ethnic == "B", 1, 0) # indicator for black
+hispanic <- ifelse(dat_2$race_ethnic == "H", 1, 0) # indicator for hispanic
+famhx <- ifelse(dat_2$familyhxra == "Yes", 1, 0)
+bage.tmp <- dat_2 %>% 
+  arrange(subj_id, t_yrs) %>%
+  group_by(subj_id) %>% 
+  filter(row_number() == 1) %>%
+  mutate(bage = round(age - t_yrs)) %>%
+  select(bage)
+age_diag <- merge(dat_2, bage.tmp, by = "subj_id")$bage
+diagnosis <- ifelse(dat_2$diagnosis == "Case", 1, 0)
 
 rm(bage.tmp)
 
@@ -67,8 +69,10 @@ rm(bage.tmp)
 subj_id <- as.integer(factor(dat_2$subj_id, levels = unique(dat_2$subj_id)))
 study_id <- as.integer(factor(dat_2$study_id, levels = unique(dat_2$study_id)))
 
-cens_max <- apply(logY, 2, function(z) as.numeric(z == max(z, na.rm = T))) # binary yes/no
-cens_min <- apply(logY, 2, function(z) as.numeric(z == min(z, na.rm = T))) # binary yes/no
-maxY <- apply(logY, 2, max, na.rm = T) # max value for each biomarker vector
-minY <- apply(logY, 2, min, na.rm = T) # min value for each biomarker vector
+cens_max <- apply(Y, 2, function(z) as.numeric(z == max(z, na.rm = T))) # binary yes/no
+cens_min <- apply(Y, 2, function(z) as.numeric(z == min(z, na.rm = T))) # binary yes/no
+maxY <- apply(Y, 2, max, na.rm = T) # max value for each biomarker vector
+minY <- apply(Y, 2, min, na.rm = T) # min value for each biomarker vector
+L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
+U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 

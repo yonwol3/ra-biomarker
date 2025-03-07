@@ -26,7 +26,6 @@ data {
 
 parameters {
   
-
   // mean function
   vector[K] mu;
   vector[K] alpha[M];

@@ -30,9 +30,6 @@ tmp <- data.frame(agediag = raDat$age - raDat$t_yrs, subj_id = raDat$subj_id)
 mean_agediag <- aggregate(agediag ~ subj_id, tmp, mean)
 raDat <- join(raDat, mean_agediag, by = "subj_id", type = "left", match = "all")
 
-# Deleting all but first observation per subject
-raDat_t1 <- raDat[unique(raDat$subj_id),]
-
 ## Generate objects for data list to be passed to JAGS
 
 # Outcome matrix
@@ -47,10 +44,11 @@ K <- ncol(Y) # number of measurements per sample
 # Covariates
 time <- raDat$t_yrs # time before diagnosis
 fem <- ifelse(raDat$gender == "F", 1, 0) # indeicator for female
-nw <- ifelse(raDat$race_ethnic == "W", 0, 1) # indicator for non-white
-famhx <- ifelse(raDat$familyhxra == "No", 0, 1)
-bage.tmp <- raDat$agediag[unique(raDat$subj_id)]
-bage <- rep(bage.tmp, times = table(raDat$subj_id))
+white <- ifelse(raDat$race_ethnic == "W", 1, 0) # indicator for white
+black <- ifelse(raDat$race_ethnic == "B", 1, 0) # indicator for black
+hisp <- ifelse(raDat$race_ethnic == "H", 1, 0) # indicator for hispanic
+famhx <- ifelse(raDat$familyhxra == "Yes", 1, 0)
+age_diag <- raDat$agediag
 diagnosis <- ifelse(raDat$diagnosis == "RA", 1, 0)
 
 rm(tmp, mean_agediag, bage.tmp)
@@ -66,6 +64,3 @@ minY <- apply(Y, 2, min)
 L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
 U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 
-# Cleaned Data
-clean <- data.frame(time, bage, fem, nw, famhx, subj_id, study_id, diagnosis, Y)
-write.csv(clean, "clean.csv")
