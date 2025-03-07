@@ -206,3 +206,4 @@ for (i in 1:ncol(mcmc))
 title("ACF Plots", outer = TRUE)
 dev.off()
 
+

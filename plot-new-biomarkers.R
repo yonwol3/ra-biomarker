@@ -38,6 +38,8 @@ for (i in seq_along(biomarkers)) {
   # Prepare data for plotting
   df_plot <- dat_2[, c("t_yrs", "diagnosis", outcome_var)]
   names(df_plot)[3] <- "outcome"  # Rename the outcome column for consistency
+  #df_plot$outcome <- log(ifelse(df_plot[[outcome_var]] == 0, 0.00001, df_plot[[outcome_var]])) # log transform the outcome
+
   
   # Fit smooth.spline for 'RA'
   df_ra <- df_plot[df_plot$diagnosis == "RA", ]
@@ -79,7 +81,7 @@ for (i in seq_along(biomarkers)) {
               size = 1) +
     geom_vline(xintercept = 0, linetype="dashed") +
     # Labels and title
-    labs(title = "Serum Levels over Time with Smoothing Spline",
+    labs(
          x = "Time Prior to Diagnosis ",
          y = paste(outcome_var)) +
     # Minimal theme for a clean look
@@ -95,8 +97,13 @@ for (i in seq_along(biomarkers)) {
 
 
 ggarrange_args <- c(plot_list[1:12],  nrow = 3, ncol = 4, 
-                    legend = "right", align = "v", common.legend = TRUE) 
-do.call(ggarrange, ggarrange_args)
+                    legend = "right", align = "v", common.legend = TRUE
+                    ) 
+combined_plot<-do.call(ggarrange, ggarrange_args)
+final_plot <- annotate_figure(combined_plot, 
+                              top = text_grob("Serum Levels over Time with Smoothing Spline", 
+                                              face = "bold", size = 14))
+final_plot
 
 #-------------------------------------------#  
 # Density plots from posterior distribution of
@@ -143,5 +150,64 @@ legend("topleft",
 
 dev.off()
 
+#---------------------------------------------------#
+# change-point density for the original biomarkers
+#---------------------------------------------------#
+source("clean-data.R")
+biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/mcmc_trunc.RData"
+temp_file <- tempfile(fileext = ".RData")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+mcmc_trunc<- get(load(temp_file)[1])
+mcmc<-mcmc_trunc[[1]]
+kappa<-mcmc[,7:12] # change points only (no gamma (rate of change))
+
+png("figures/change-point-dens-originalbiomarkers.png", 
+    width = 1000, 
+    height = 1000,
+    res = 100, 
+    units = "px")
+
+plot(density(kappa[,1]), lwd = 2,
+     col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
+     ylim = c(0, 1.5),
+     xlim = c(-20, 5),
+     main = "Change Point Densities")
+
+for (i in 2:6) {
+  lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
+}
+
+abline(v = 0, lty = 2, col = "blue")
+abline(h = 0, lty = 1, col = "black")
+grid()
+
+legend("topleft", 
+       legend = biomarkers,
+       col = outcome_colors, 
+       lwd = rep(2, 6),
+       cex = 1)
+
+dev.off()
+
+#-------------------------------------------#
+# calculate mean and 95% Credible Interval 
+#-------------------------------------------#
+credible_res <- data.frame(biomarker=character(0),mean = numeric(0), 
+                           credible_lower = numeric(0),
+                           credible_upper = numeric(0))
+
+for (i in 1:ncol(kappa)) {
+  credible_res[i, "mean"] <- round(mean(kappa[, i]), 2)         # mean 
+  credible_res[i, "credible_lower"] <- round(quantile(kappa[, i], 0.025), 2)  # 2.5th quantile
+  credible_res[i, "credible_upper"] <- round(quantile(kappa[, i], 0.975), 2)  # 97.5th quantile
+  credible_res[i, "biomarker"]<- biomarkers[i]
+}
+credible_res<-arrange(credible_res,mean)
 
 

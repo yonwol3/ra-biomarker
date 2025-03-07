@@ -4,13 +4,23 @@
 ## BY:      Kevin Josey                    ##
 #############################################
 
-require(plyr)
+library(Microsoft365R)
 require(tidyverse)
-
+require(plyr)
 ## Data Cleaning
-setwd("~/Documents/RA-Biomarker/")
 
-raDat <- read.delim("data/forKevin.txt", stringsAsFactors = FALSE)
+#setwd("~/Documents/RA-Biomarker/")
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/forKevin.txt "
+temp_file <- tempfile(fileext = ".txt")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+
+
+raDat <- read.delim(temp_file, stringsAsFactors = FALSE)
 names(raDat) <- tolower(names(raDat))
 
 raDat_case <- subset(raDat, diagnosis == "RA")

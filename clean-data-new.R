@@ -3,11 +3,20 @@
 #-----------------------#
 library(readxl)
 library(tidyverse)
+library(Microsoft365R)
 
-file_path <- "~/Documents/RA-Biomarker/Data/KevinDat2.xlsx"
-#dat_2raw <- read_xlsx(file_path)
+#file_path <- "~/Documents/RA-Biomarker/Data/KevinDat2.xlsx"
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/KevinDat2.xlsx"
+temp_file <- tempfile(fileext = ".xlsx")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
 
-dat_2raw <- read_xlsx(file_path)
+dat_2raw <- read_xlsx(temp_file)
+unlink(temp_file)
 colnames(dat_2raw) <- tolower(colnames(dat_2raw))
 
 biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
@@ -63,16 +72,10 @@ bage.tmp <- dat_2 %>%
 age_diag <- merge(dat_2, bage.tmp, by = "subj_id")$bage
 diagnosis <- ifelse(dat_2$diagnosis == "Case", 1, 0)
 
+
 rm(bage.tmp)
 
 # ID vector
 subj_id <- as.integer(factor(dat_2$subj_id, levels = unique(dat_2$subj_id)))
 study_id <- as.integer(factor(dat_2$study_id, levels = unique(dat_2$study_id)))
-
-cens_max <- apply(Y, 2, function(z) as.numeric(z == max(z, na.rm = T))) # binary yes/no
-cens_min <- apply(Y, 2, function(z) as.numeric(z == min(z, na.rm = T))) # binary yes/no
-maxY <- apply(Y, 2, max, na.rm = T) # max value for each biomarker vector
-minY <- apply(Y, 2, min, na.rm = T) # min value for each biomarker vector
-L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
-U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 
