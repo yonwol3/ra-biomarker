@@ -21,6 +21,7 @@ library(gt)
 source("clean-data.R")
 source("clean-data-new.R")
 
+
 # Add age at diagnosis values to each dataset
 clean$agediag <- raDat$agediag  # adding mean age at diagnosis from raDat
 dat_2$agediag <- dat_2$age - dat_2$t_yrs  # age at diagnosis in new dataset
@@ -456,6 +457,7 @@ write.csv(fe.tbl, file = "data/table-4.csv")
 #------------------------------------------------#
 #
 # change-point+ magnitude(90% prob being >0)
+# Original Biomarkers
 #
 #------------------------------------------------#
 
@@ -526,6 +528,93 @@ closest_threshold <- result_df %>%
   dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
   dplyr::ungroup()%>% 
   arrange(time)
+
+
+
+#------------------------------------------------#
+#
+# change-point+ magnitude(90% prob being >0)
+# New Biomarkers
+#
+#------------------------------------------------#
+
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/mcmc_new_trunc.RData"
+temp_file <- tempfile(fileext = ".RData")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+mcmc_trunc_new<- get(load(temp_file)[1])
+mcmc_new<-mcmc_trunc_new[[1]]
+
+# Number of biomarkers being analyzed
+k <- 12
+
+# Define the time grid
+time_grid <- seq(-20, 10, by = 0.01)
+
+# Extract kappa and gamma from the mcmc data
+kappa <- mcmc_new[, 13:24]
+gamma <- mcmc_new[, 1:12]
+
+# Define labels for each dimension
+biomarkers<-c("aptivaccp3iga","aptivaccp3igg",
+              "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
+              "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
+              "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
+              "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
+biomarkers <- sub("^aptiva", "", biomarkers)
+biomarkers<- sub("_≥5#00au", "", biomarkers)
+biomarkers<-sub("_","",biomarkers)
+biomarker_labels <- biomarkers
+
+time_labels <- as.character(time_grid)
+iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
+
+# Create a 3-dimensional array with named dimensions:
+# Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
+res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
+             dimnames = list(
+               biomarker = biomarker_labels,
+               time = time_labels,
+               iteration = iteration_labels
+             ))
+
+# Loop over biomarkers, time grid, and iterations to fill the array.
+for (b in 1:k) {
+  gamma_b <- gamma[, b]     # gamma values for biomarker b
+  kappa_b <- kappa[, b]     # kappa values for biomarker b
+  
+  for (i in seq_along(time_grid)) {
+    t <- time_grid[i]
+    for (j in 1:nrow(kappa)) {
+      res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
+    }
+  }
+}
+
+# Convert the array to a data frame.
+result_df_new<- as.data.frame.table(res, responseName = "value")
+colnames(result_df_new) <- c("biomarker", "time", "iteration", "value")
+
+result_df_new$time <-as.numeric(as.character(result_df_new$time))
+
+# Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
+result_df_new <- result_df_new %>% 
+  dplyr::group_by(biomarker, time) %>% 
+  dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
+  arrange(desc(prop_positive))
+
+# select time where absolute difference between prop_positive and 0.9 is minimized
+
+closest_threshold_new<- result_df_new %>% 
+  dplyr::group_by(biomarker) %>% 
+  dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
+  dplyr::ungroup()%>% 
+  arrange(time)
+
 
 
 

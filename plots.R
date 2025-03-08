@@ -122,88 +122,67 @@ ggarrange(plot_list[[1]],plot_list[[2]], plot_list[[3]],
           plot_list[[4]],plot_list[[5]], plot_list[[6]], nrow = 3, ncol = 2, 
           legend="right",align = "v", common.legend = TRUE)
 
-## Changepoint Density Plot
 
-load("mcmc/mcmc_d.RData")
+#---------------------------------------------------#
+# change-point density for the original biomarkers
+#---------------------------------------------------#
+source("clean-data.R")
+biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/mcmc_trunc.RData"
+temp_file <- tempfile(fileext = ".RData")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+mcmc_trunc<- get(load(temp_file)[1])
+mcmc<-mcmc_trunc[[1]]
+kappa<-mcmc[,7:12] # change points only (no gamma (rate of change))
 
-kappa.names <- c("kappa[1]", "kappa[2]", "kappa[3]", "kappa[4]", "kappa[5]", "kappa[6]")
-
-kappa <- mcmc_d[[1]][,kappa.names]
-colnames(kappa) <- colnames(Y)
-
-png("figures/change-point-dist.png", 
+png("figures/change-point-dens-originalbiomarkers.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
     units = "px")
 
 plot(density(kappa[,1]), lwd = 2,
-     col = "darkolivegreen4", ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 0.8),
+     col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
+     ylim = c(0, 1.5),
      xlim = c(-20, 5),
      main = "Change Point Densities")
-lines(density(kappa[,2]), lwd = 2,
-      col = "darkorange4")
-lines(density(kappa[,3]), lwd = 2,
-      col = "firebrick4")
-lines(density(kappa[,4]), lwd = 2,
-      col = "dodgerblue4")
-lines(density(kappa[,5]), lwd = 2,
-      col = "mediumorchid4")
-lines(density(kappa[,6]), lwd = 2,
-      col = "khaki4")
+
+for (i in 2:6) {
+  lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
+}
+
 abline(v = 0, lty = 2, col = "blue")
 abline(h = 0, lty = 1, col = "black")
 grid()
+
 legend("topleft", 
-       legend = colnames(Y),
-       col = c("darkolivegreen4", "darkorange4", "firebrick4", 
-               "dodgerblue4", "mediumorchid4", "khaki4"), 
-       lwd = c(2, 2, 2, 2, 2, 2),
+       legend = biomarkers,
+       col = outcome_colors, 
+       lwd = rep(2, 6),
        cex = 1)
 
 dev.off()
 
-## Diagnostics of model (c)
+#-------------------------------------------#
+# calculate mean and 95% Credible Interval 
+#-------------------------------------------#
+credible_res <- data.frame(biomarker=character(0),mean = numeric(0), 
+                           credible_lower = numeric(0),
+                           credible_upper = numeric(0))
 
-load("mcmc/mcmc_b.RData")
+for (i in 1:ncol(kappa)) {
+  credible_res[i, "mean"] <- round(mean(kappa[, i]), 2)         # mean 
+  credible_res[i, "credible_lower"] <- round(quantile(kappa[, i], 0.025), 2)  # 2.5th quantile
+  credible_res[i, "credible_upper"] <- round(quantile(kappa[, i], 0.975), 2)  # 97.5th quantile
+  credible_res[i, "biomarker"]<- biomarkers[i]
+}
+credible_res<-arrange(credible_res,mean)
 
-pdf("images/trace_c.pdf")
-plot(mcmc_c)
-dev.off()
 
-mcmc <- as.matrix(mcmc_c[[1]])
-
-png("images/acf_c.png", 
-    width = 7000, 
-    height = 6000,
-    res = 100, 
-    units = "px")
-par(mfrow = c(4, 6), mar = c(1,1,1,1))
-for (i in 1:ncol(mcmc))
-  acf(mcmc[,i], ylab = colnames(mcmc)[i])
-title("ACF Plots", outer = TRUE)
-dev.off()
-
-## Diagnostic Plots
-
-load("mcmc/mcmc_c.RData")
-
-pdf("images/trace_c.pdf")
-plot(mcmc_c)
-dev.off()
-
-mcmc <- as.matrix(mcmc_c[[1]])
-
-png("images/acf_c.png", 
-    width = 7000, 
-    height = 6000,
-    res = 100, 
-    units = "px")
-par(mfrow = c(4, 3), mar = c(1,1,1,1))
-for (i in 1:ncol(mcmc))
-  acf(mcmc[,i], ylab = colnames(mcmc)[i])
-title("ACF Plots", outer = TRUE)
-dev.off()
 
 

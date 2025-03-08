@@ -13,11 +13,16 @@ library(ggpubr)
 source("clean-data-new.R")
 dat_2$diagnosis <- factor(dat_2$diagnosis, levels = c("Control", "Case"), labels = c("no_RA", "RA"))
 
-biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
-              "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
-              "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
-              "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
-              "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
+biomarkers<-biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
+                          "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
+                          "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
+                          "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
+                          "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
+biomarkers_labels<- sub("^aptiva", "", biomarkers)
+biomarkers_labels<- sub("_≥5#00au", "", biomarkers_labels)
+biomarkers_labels<-sub("_≥5#00flu","",biomarkers_labels)
+biomarkers_labels<-sub("_","",biomarkers_labels)
+
 outcome_colors <- brewer.pal(12, "Paired")
 names(outcome_colors) <- biomarkers
 
@@ -33,6 +38,7 @@ plot_list <- list()
 # Loop through each outcome variable to create plots
 for (i in seq_along(biomarkers)) {
   outcome_var <- biomarkers[i] 
+  bio_label<-biomarkers_labels[i] # instead of full biomarker name use shortened version 
   color <- outcome_colors[outcome_var]
   
   # Prepare data for plotting
@@ -83,7 +89,7 @@ for (i in seq_along(biomarkers)) {
     # Labels and title
     labs(
          x = "Time Prior to Diagnosis ",
-         y = paste(outcome_var)) +
+         y = paste(bio_label)) +
     # Minimal theme for a clean look
     theme_minimal() +
     # Center the plot title and remove legend title
@@ -101,9 +107,9 @@ ggarrange_args <- c(plot_list[1:12],  nrow = 3, ncol = 4,
                     ) 
 combined_plot<-do.call(ggarrange, ggarrange_args)
 final_plot <- annotate_figure(combined_plot, 
-                              top = text_grob("Serum Levels over Time with Smoothing Spline", 
+                              top = text_grob("Serum Levels over Time with Smoothing Spline (Sample 2)", 
                                               face = "bold", size = 14))
-final_plot
+print(final_plot)
 
 #-------------------------------------------#  
 # Density plots from posterior distribution of
@@ -122,7 +128,7 @@ mcmc_new_trunc<- get(load(temp_file)[1])
 mcmc<-mcmc_new_trunc[[1]]
 kappa<-mcmc[,13:24] # change points only (no gamma (rate of change))
 
-png("figures/change-point-dens-newbiomarkers.png", 
+png("figures/change-point-dens-new-biomarkers.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
@@ -132,7 +138,7 @@ plot(density(kappa[,1]), lwd = 2,
      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
      ylim = c(0, 0.8),
      xlim = c(-20, 5),
-     main = "Change Point Densities")
+     main = "Change Point Densities (Sample 2)")
 
 for (i in 2:12) {
   lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
@@ -143,57 +149,13 @@ abline(h = 0, lty = 1, col = "black")
 grid()
 
 legend("topleft", 
-       legend = biomarkers,
+       legend = biomarkers_labels,
        col = outcome_colors, 
        lwd = rep(2, 12),
        cex = 1)
 
 dev.off()
 
-#---------------------------------------------------#
-# change-point density for the original biomarkers
-#---------------------------------------------------#
-source("clean-data.R")
-biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_trunc.RData"
-temp_file <- tempfile(fileext = ".RData")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-mcmc_trunc<- get(load(temp_file)[1])
-mcmc<-mcmc_trunc[[1]]
-kappa<-mcmc[,7:12] # change points only (no gamma (rate of change))
-
-png("figures/change-point-dens-originalbiomarkers.png", 
-    width = 1000, 
-    height = 1000,
-    res = 100, 
-    units = "px")
-
-plot(density(kappa[,1]), lwd = 2,
-     col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 1.5),
-     xlim = c(-20, 5),
-     main = "Change Point Densities")
-
-for (i in 2:6) {
-  lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
-}
-
-abline(v = 0, lty = 2, col = "blue")
-abline(h = 0, lty = 1, col = "black")
-grid()
-
-legend("topleft", 
-       legend = biomarkers,
-       col = outcome_colors, 
-       lwd = rep(2, 6),
-       cex = 1)
-
-dev.off()
 
 #-------------------------------------------#
 # calculate mean and 95% Credible Interval 
@@ -206,8 +168,7 @@ for (i in 1:ncol(kappa)) {
   credible_res[i, "mean"] <- round(mean(kappa[, i]), 2)         # mean 
   credible_res[i, "credible_lower"] <- round(quantile(kappa[, i], 0.025), 2)  # 2.5th quantile
   credible_res[i, "credible_upper"] <- round(quantile(kappa[, i], 0.975), 2)  # 97.5th quantile
-  credible_res[i, "biomarker"]<- biomarkers[i]
+  credible_res[i, "biomarker"]<- biomarkers_labels[i]
 }
 credible_res<-arrange(credible_res,mean)
-
 
