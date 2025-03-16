@@ -58,10 +58,11 @@ white <- ifelse(raDat$race_ethnic == "W", 1, 0) # indicator for white
 black <- ifelse(raDat$race_ethnic == "B", 1, 0) # indicator for black
 hisp <- ifelse(raDat$race_ethnic == "H", 1, 0) # indicator for hispanic
 famhx <- ifelse(raDat$familyhxra == "Yes", 1, 0)
+
 age_diag <- raDat$agediag
 diagnosis <- ifelse(raDat$diagnosis == "RA", 1, 0)
 
-rm(tmp, mean_agediag, bage.tmp)
+rm(tmp, mean_agediag)
 
 # ID vector
 subj_id <- raDat$subj_id
@@ -74,3 +75,4 @@ minY <- apply(Y, 2, min)
 L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
 U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 
+clean <- data.frame(time,age_diag, fem, white, black,hisp,famhx, subj_id, study_id, diagnosis, Y)

@@ -13,7 +13,7 @@ library(ggpubr)
 source("clean-data-new.R")
 dat_2$diagnosis <- factor(dat_2$diagnosis, levels = c("Control", "Case"), labels = c("no_RA", "RA"))
 
-biomarkers<-biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
+biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
                           "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
                           "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
                           "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
@@ -171,4 +171,9 @@ for (i in 1:ncol(kappa)) {
   credible_res[i, "biomarker"]<- biomarkers_labels[i]
 }
 credible_res<-arrange(credible_res,mean)
+credible_res<-credible_res %>% 
+  mutate(`95% Credible Interval`=paste("[", credible_lower, ", ", credible_upper, "]"))%>%
+  select(biomarker, mean, `95% Credible Interval`)
+
+write.csv(credible_res,"../../new_cp_ci.csv")
 

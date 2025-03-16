@@ -16,27 +16,26 @@ library(gt)
 
 ## Table 1
 
-
 # Load the dataframes
 source("clean-data.R")
 source("clean-data-new.R")
 
-
 # Add age at diagnosis values to each dataset
-clean$agediag <- raDat$agediag  # adding mean age at diagnosis from raDat
+clean$agediag <- raDat$age - raDat$t_yrs # adding age at diagnosis from raDat
 dat_2$agediag <- dat_2$age - dat_2$t_yrs  # age at diagnosis in new dataset
 
 # Rename covariate elements for the 'clean' dataset
 clean$fem <- factor(clean$fem, labels = c("Male", "Female"))
-clean$nw <- factor(clean$nw, labels = c("White", "Non-white"))
+clean$nw <- factor(clean$white, labels = c("Non-white","White"))
+clean$famhx<-raDat$familyhxra 
 clean$eversmoke <- raDat$eversmoke  # smoking status from raDat
 clean$diagnosis <- factor(clean$diagnosis, labels = c("No RA", "RA"))
 clean <- clean %>%
   dplyr::mutate(
     famhx_c = dplyr::case_when(
-      famhx == 0 ~ "No",
-      famhx == 1 ~ "Yes",
-      is.na(famhx) ~ "Not available"
+      famhx == "Yes" ~ "Yes",
+      famhx == "No" ~ "No",
+      T ~ "Not available"
     ),
     smoking = dplyr::case_when(
       eversmoke == "No" ~ "No",
@@ -52,6 +51,8 @@ dat_2$nw <- factor(dat_2$nw, labels = c("White", "Non-white"))
 dat_2$diagnosis <- factor(dat_2$diagnosis, 
                           levels = c("Control", "Case"), 
                           labels = c("No RA", "RA"))
+dat_2$subj_id<-subj_id
+dat_2$study_id<-study_id
 dat_2 <- dat_2 %>%
   dplyr::mutate(
     famhx_c = dplyr::case_when(
@@ -133,24 +134,80 @@ t1 <- table1(
 t1
 
 
+# Practice for table_2 
+
+covariates_2 <- c("gender", "race", "famhx_c", "smoking")
+biomarkers_2 <- c("mean_agediag", "mean_aptivaccp3iga_≥5#00flu",           
+                  "mean_aptivaccp3igg_≥5#00flu" ,"mean_aptivapad1igg_≥5#00au",             
+                  "mean_aptivapad4igg_≥5#00au","mean_aptiva_acpafsiggvimentin2_≥5#00au" ,
+                 "mean_aptiva_acpafsiggfibrinogen_≥5#00au","mean_aptiva_acpafsigghistone1_≥5#00au"  ,
+                  "mean_aptivapad1iga_≥5#00au", "mean_aptivapad4iga_≥5#00au"  ,           
+                   "mean_aptiva_acpafsigavimentin2_≥5#00au", "mean_aptiva_acpafsigafibrinogen_≥5#00au",
+                "mean_aptiva_acpafsigahistone1_≥5#00au" )
+dat_2_tb1 <- set_variable_labels(dat_2_tb1,
+                                 gender = "Sex",
+                                 race = "Race",
+                                 famhx_c = "Family RA History",
+                                 smoking = "Eversmoke", 
+                                 mean_agediag = "Age at Diagnosis",
+                                 `mean_aptivaccp3iga_≥5#00flu`="ccp3iga",
+                                 `mean_aptivaccp3igg_≥5#00flu`="ccp3igg",
+                                 `mean_aptivapad1igg_≥5#00au`="pad1igg",             
+                                 `mean_aptivapad4igg_≥5#00au`="pad4igg",
+                                 `mean_aptiva_acpafsiggvimentin2_≥5#00au`= "acpafsiggvimentin2",
+                                 `mean_aptiva_acpafsiggfibrinogen_≥5#00au`="acpafsiggfibrinogen",
+                                 `mean_aptiva_acpafsigghistone1_≥5#00au`= "acpafsigghistone1" ,
+                                 `mean_aptivapad1iga_≥5#00au`="pad1iga", 
+                                 `mean_aptivapad4iga_≥5#00au`="pad4iga",           
+                                 `mean_aptiva_acpafsigavimentin2_≥5#00au`="acpafsigavimentin2" , 
+                                 `mean_aptiva_acpafsigafibrinogen_≥5#00au`="acpafsigafibrinogen",
+                                 `mean_aptiva_acpafsigahistone1_≥5#00au`="acpafsigahistone1" )
+
+t2_variables <- c(covariates_2, biomarkers_2)
+
+# If needed, enclose variable names with backticks:
+t2_variables_backticked <- paste0("`", t2_variables, "`")
+
+# Create the table with table1 using our custom continuous renderer:
+t2 <- table1(
+  as.formula(paste0("~", paste(t2_variables_backticked, collapse = "+"), "| diagnosis")),
+  data = dat_2_tb1,
+  caption = "Table1: Descriptive Summary of Sample-2 by RA status",
+  render.cont = render.median.IQR
+)
+
+t2
+
+
+
 
 #--------------------#
 #
 # table-1 BOTH cohorts
 #
 #---------------------#
+# Set variable labels for dat_2_tb1
 
 # Create Table 1 datasets by removing the subject ID column and renaming 'diagnosis' as 'group'
 df1 <- clean_tb1[, -1] %>% 
   dplyr::rename(group = diagnosis)
 df2 <- dat_2_tb1[, -1] %>% 
   dplyr::rename(group = diagnosis)
+
+# Make sure group is a factor with proper labels.
 df1$group <- factor(df1$group, labels = c("Non-RA", "RA"))
 df2$group <- factor(df2$group, labels = c("Non-RA", "RA"))
+
+# Helper: get the label of a variable (if it exists) or return the variable name.
+get_label <- function(data, var) {
+  lab <- attr(data[[var]], "label")
+  if (is.null(lab)) var else lab
+}
 
 # Summaries for numeric variables: Continuous variables summarized as Median (IQR)
 summarize_numeric_vars <- function(data, numeric_vars, group_var) {
   out_list <- lapply(numeric_vars, function(v) {
+    # Calculate summary stats by group.
     stat_df <- data %>%
       dplyr::group_by(.data[[group_var]]) %>%
       dplyr::summarize(
@@ -164,11 +221,14 @@ summarize_numeric_vars <- function(data, numeric_vars, group_var) {
       ) %>%
       dplyr::select(dplyr::all_of(group_var), MedIQR)
     
-    stat_long <- stat_df %>%
-      dplyr::mutate(stat = "Median (IQR)", var = v)
-    # Use base R to rename 'MedIQR' to 'val'
-    names(stat_long)[names(stat_long) == "MedIQR"] <- "val"
+    # Look up the label for the variable.
+    label_name <- get_label(data, v)
     
+    stat_long <- stat_df %>%
+      dplyr::mutate(stat = "Median (IQR)", var = label_name)
+    
+    # Rename the computed value column to "val"
+    names(stat_long)[names(stat_long) == "MedIQR"] <- "val"
     stat_long
   })
   
@@ -195,9 +255,12 @@ summarize_categorical_vars <- function(data, factor_vars, group_var) {
       dplyr::mutate(val = paste0(n, " (", percent, "%)")) %>%
       dplyr::select(dplyr::all_of(group_var), level = dplyr::all_of(v), val)
     
+    # Look up the label for the variable.
+    label_name <- get_label(data, v)
+    
     dcat_long <- dcat %>%
       dplyr::rename(stat = level) %>%
-      dplyr::mutate(var = v)
+      dplyr::mutate(var = label_name)
     
     dcat_wide <- dcat_long %>%
       tidyr::pivot_wider(
@@ -213,13 +276,15 @@ summarize_categorical_vars <- function(data, factor_vars, group_var) {
   return(all_cats)
 }
 
-# One-sample summarizer
+# One-sample summarizer: generates the summary table for one dataset.
 make_summary_one_sample <- function(data, group_var = "group") {
   numeric_vars <- names(data)[sapply(data, is.numeric)]
   factor_vars <- names(data)[sapply(data, function(x) is.character(x) | is.factor(x))]
+  
   numeric_vars <- setdiff(numeric_vars, group_var)
   factor_vars <- setdiff(factor_vars, group_var)
   
+  # Ensure factor variables are factors.
   data[factor_vars] <- lapply(data[factor_vars], factor)
   
   df_numeric <- NULL
@@ -232,31 +297,32 @@ make_summary_one_sample <- function(data, group_var = "group") {
     df_cat <- summarize_categorical_vars(data, factor_vars, group_var)
   }
   
-  combined <- dplyr::bind_rows(df_numeric, df_cat)
+  combined <- dplyr::bind_rows(df_cat, df_numeric)
   return(combined)
 }
 
-# Create summaries for your two samples
+# Create summaries for your two samples.
 summary_df1 <- make_summary_one_sample(df1, "group") %>%
   dplyr::rename(Sample1_RA = RA, Sample1_NonRA = `Non-RA`)
 
 summary_df2 <- make_summary_one_sample(df2, "group") %>%
   dplyr::rename(Sample2_RA = RA, Sample2_NonRA = `Non-RA`)
 
+# Combine the two summaries; replace NA with "-"
 combined_table <- dplyr::full_join(summary_df1, summary_df2, by = c("var", "stat")) %>%
   dplyr::mutate(dplyr::across(everything(), ~ ifelse(is.na(.), "-", .)))
 
-# Compute RA / Non-RA sample sizes for each dataset
+# Compute RA / Non-RA sample sizes for each dataset.
 n_sample1_RA <- sum(df1$group == "RA")
 n_sample1_NonRA <- sum(df1$group == "Non-RA")
 n_sample2_RA <- sum(df2$group == "RA")
 n_sample2_NonRA <- sum(df2$group == "Non-RA")
 
-# Build final GT Table with bold formatting
+# Build the final GT Table with bold formatting.
 final_gt_table <- combined_table %>%
   gt::gt(
     rowname_col = "stat",    # row labels (e.g., "Median (IQR)", "Female", etc.)
-    groupname_col = "var"      # group each variable together in bold
+    groupname_col = "var"      # groups each variable together (displayed in bold)
   ) %>%
   gt::tab_spanner(
     label = "Sample 1",
@@ -266,7 +332,7 @@ final_gt_table <- combined_table %>%
     label = "Sample 2",
     columns = c("Sample2_RA", "Sample2_NonRA")
   ) %>%
-  # Bold the RA/Non-RA column labels with sample sizes
+  # Bold the RA/Non-RA column labels with sample sizes.
   gt::cols_label(
     Sample1_RA = gt::md(sprintf("**RA (N=%d)**", n_sample1_RA)),
     Sample1_NonRA = gt::md(sprintf("**Non-RA (N=%d)**", n_sample1_NonRA)),
@@ -274,18 +340,18 @@ final_gt_table <- combined_table %>%
     Sample2_NonRA = gt::md(sprintf("**Non-RA (N=%d)**", n_sample2_NonRA))
   ) %>%
   gt::tab_header(
-    title = gt::md("**Table 1: Descriptive Summary**")
+    title = gt::md("**Table 1: Descriptive Summary of Sample 1 and Sample 2**")
   ) %>%
-  # Bold the group labels (variable names)
+  # Bold the group labels (variable names).
   gt::tab_style(
     style = gt::cell_text(weight = "bold"),
     locations = gt::cells_row_groups(groups = gt::everything())
   ) %>%
-  # Add lines and center columns
+  # Add lines and center columns.
   gt::opt_table_lines(extent = "all") %>%
   gt::cols_align("center")
 
-# Display the final table
+# Display the final table.
 final_gt_table
 
 
@@ -529,6 +595,19 @@ closest_threshold <- result_df %>%
   dplyr::ungroup()%>% 
   arrange(time)
 
+gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels)) # gamma summary (mean [95% CI])
+for ( i in 1:length(biomarker_labels)) {
+  gamma_b<-gamma[, i]
+  mean<-round(mean(gamma_b),2)
+  q_2<-round(quantile(gamma_b, 0.025), 2) # 2.5th quantile
+  q_97<-round(quantile(gamma_b, 0.975), 2) # 97.5th quantile
+  gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
+  gamma_summ[i, 1]<-biomarker_labels[i]
+}
+gamma_summ<- as.data.frame(gamma_summ)
+colnames(gamma_summ)<- c("biomarker","mean[95% CI]")
+closest_threshold<-left_join(closest_threshold,gamma_summ, by="biomarker") 
+write.csv(closest_threshold,"../../original_prob_ci.csv")
 
 
 #------------------------------------------------#
@@ -615,6 +694,18 @@ closest_threshold_new<- result_df_new %>%
   dplyr::ungroup()%>% 
   arrange(time)
 
-
+gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels)) # gamma summary (mean [95% CI])
+for ( i in 1:length(biomarker_labels)) {
+  gamma_b<-gamma[, i]
+  mean<-round(mean(gamma_b),2)
+  q_2<-round(quantile(gamma_b, 0.025), 2) # 2.5th quantile
+  q_97<-round(quantile(gamma_b, 0.975), 2) # 97.5th quantile
+  gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
+  gamma_summ[i, 1]<-biomarker_labels[i]
+}
+gamma_summ<- as.data.frame(gamma_summ)
+colnames(gamma_summ)<- c("biomarker","mean[95% CI]")
+closest_threshold_new<-left_join(closest_threshold_new,gamma_summ, by="biomarker") # add 'gamma' summary column
+write.csv(closest_threshold_new,"../../new_prob_ci.csv")
 
 

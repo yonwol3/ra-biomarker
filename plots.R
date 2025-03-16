@@ -14,6 +14,7 @@ library(ggplot2)
 library(RColorBrewer)
 library(gridExtra)
 library(ggpubr)
+library(kableExtra)
 
 # Reading data cleaning R file
 # setwd("~/Dropbox/Projects/RA-Biomarker/")
@@ -182,7 +183,10 @@ for (i in 1:ncol(kappa)) {
   credible_res[i, "biomarker"]<- biomarkers[i]
 }
 credible_res<-arrange(credible_res,mean)
-
-
+credible_res<-credible_res %>% 
+              mutate(`95% Credible Interval`=paste("[", credible_lower, ", ", credible_upper, "]"))%>%
+              select(biomarker, mean, `95% Credible Interval`)
+             
+write.csv(credible_res,"../../original_cp_ci.csv")
 
 
