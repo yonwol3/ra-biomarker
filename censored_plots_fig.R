@@ -174,7 +174,8 @@ biomarkers<- sub("_≥5#00au", "", biomarkers)
 biomarkers<-sub("_","",biomarkers)
 biomarker_labels <- biomarkers
 
-
+outcome_colors <- brewer.pal(12, "Paired")
+names(outcome_colors) <- biomarkers
 
 
 ### changepoint density plots####
@@ -188,7 +189,7 @@ png("figures/cens_new_change-point-dens.png",
 
 plot(density(kappa[,1]), lwd = 2,
      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 0.8),
+     ylim = c(0, 3),
      xlim = c(-20, 5),
      main = "Change Point Densities (Sample 2)")
 

@@ -20,6 +20,14 @@ library(gt)
 source("clean-data.R")
 source("clean-data-new.R")
 
+preserve_factor <- function(x) {
+                      lab <- attr(x, "label")
+                      fx <- factor(x)
+                      attr(fx, "label") <- lab
+                      fx
+                    }
+
+
 # Add age at diagnosis values to each dataset
 clean$agediag <- raDat$age - raDat$t_yrs # adding age at diagnosis from raDat
 dat_2$agediag <- dat_2$age - dat_2$t_yrs  # age at diagnosis in new dataset
@@ -106,44 +114,10 @@ clean_tb1 <- set_variable_labels(clean_tb1,
                                  mean_igmccpavgconc = "ACPA IgM",
                                  mean_iggccpavgconc = "ACPA IgG")
 
-##### Table-1 just for the original biomarkers for now
-
-render.median.IQR <- function(x, ...) {
-  c('', 
-    `Median (IQR)` = sprintf("%s (%s, %s)", round(median(x),1), 
-                             round(quantile(x, 0.25),1), round(quantile(x, 0.75),1)))
-}
-# Define the variables:
-covariates <- c("gender", "race", "famhx_c", "smoking")
-biomarkers <- c("mean_agediag", "mean_igarfconc_", "mean_igmrfconc_", 
-                "mean_iggrfconc_", "mean_igaccpavgconc", "mean_igmccpavgconc", 
-                "mean_iggccpavgconc")
-t1_variables <- c(covariates, biomarkers)
-
-# If needed, enclose variable names with backticks:
-t1_variables_backticked <- paste0("`", t1_variables, "`")
-
-# Create the table with table1 using our custom continuous renderer:
-t1 <- table1(
-  as.formula(paste0("~", paste(t1_variables_backticked, collapse = "+"), "| diagnosis")),
-  data = clean_tb1,
-  caption = "Table1: Descriptive summary of original sample by RA status",
-  render.cont = render.median.IQR
-)
-
-t1
 
 
-# Practice for table_2 
 
-covariates_2 <- c("gender", "race", "famhx_c", "smoking")
-biomarkers_2 <- c("mean_agediag", "mean_aptivaccp3iga_≥5#00flu",           
-                  "mean_aptivaccp3igg_≥5#00flu" ,"mean_aptivapad1igg_≥5#00au",             
-                  "mean_aptivapad4igg_≥5#00au","mean_aptiva_acpafsiggvimentin2_≥5#00au" ,
-                 "mean_aptiva_acpafsiggfibrinogen_≥5#00au","mean_aptiva_acpafsigghistone1_≥5#00au"  ,
-                  "mean_aptivapad1iga_≥5#00au", "mean_aptivapad4iga_≥5#00au"  ,           
-                   "mean_aptiva_acpafsigavimentin2_≥5#00au", "mean_aptiva_acpafsigafibrinogen_≥5#00au",
-                "mean_aptiva_acpafsigahistone1_≥5#00au" )
+
 dat_2_tb1 <- set_variable_labels(dat_2_tb1,
                                  gender = "Sex",
                                  race = "Race",
@@ -163,20 +137,7 @@ dat_2_tb1 <- set_variable_labels(dat_2_tb1,
                                  `mean_aptiva_acpafsigafibrinogen_≥5#00au`="acpafsigafibrinogen",
                                  `mean_aptiva_acpafsigahistone1_≥5#00au`="acpafsigahistone1" )
 
-t2_variables <- c(covariates_2, biomarkers_2)
 
-# If needed, enclose variable names with backticks:
-t2_variables_backticked <- paste0("`", t2_variables, "`")
-
-# Create the table with table1 using our custom continuous renderer:
-t2 <- table1(
-  as.formula(paste0("~", paste(t2_variables_backticked, collapse = "+"), "| diagnosis")),
-  data = dat_2_tb1,
-  caption = "Table1: Descriptive Summary of Sample-2 by RA status",
-  render.cont = render.median.IQR
-)
-
-t2
 
 
 
@@ -193,6 +154,7 @@ df1 <- clean_tb1[, -1] %>%
   dplyr::rename(group = diagnosis)
 df2 <- dat_2_tb1[, -1] %>% 
   dplyr::rename(group = diagnosis)
+
 
 # Make sure group is a factor with proper labels.
 df1$group <- factor(df1$group, labels = c("Non-RA", "RA"))
@@ -285,7 +247,7 @@ make_summary_one_sample <- function(data, group_var = "group") {
   factor_vars <- setdiff(factor_vars, group_var)
   
   # Ensure factor variables are factors.
-  data[factor_vars] <- lapply(data[factor_vars], factor)
+  data[factor_vars] <- lapply(data[factor_vars], preserve_factor)
   
   df_numeric <- NULL
   if (length(numeric_vars) > 0) {

@@ -18,11 +18,24 @@ onedrive$download_file(
   dest = temp_file,
   overwrite = TRUE
 )
-
-
 raDat <- read.delim(temp_file, stringsAsFactors = FALSE)
 names(raDat) <- tolower(names(raDat))
+unlink(temp_file)
 
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/DOD_AddRace.xls"
+temp_file <- tempfile(fileext = ".xls")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+race_clean<-read_xls(temp_file, sheet=2)
+unlink(temp_file)
+
+
+
+raDat$race_ethnic<-race_clean$RACE_ETHNIC # the correct race/ethnicity values
 raDat_case <- subset(raDat, diagnosis == "RA")
 raDat_control <- subset(raDat, diagnosis == "Control")
 
@@ -53,10 +66,10 @@ K <- ncol(Y) # number of measurements per sample
 
 # Covariates
 time <- raDat$t_yrs # time before diagnosis
-fem <- ifelse(raDat$gender == "F", 1, 0) # indeicator for female
+fem <- ifelse(raDat$gender == "F", 1, 0) # indicator for female
 white <- ifelse(raDat$race_ethnic == "W", 1, 0) # indicator for white
 black <- ifelse(raDat$race_ethnic == "B", 1, 0) # indicator for black
-hisp <- ifelse(raDat$race_ethnic == "H", 1, 0) # indicator for hispanic
+hisp <- ifelse(raDat$race_ethnic == "H", 1, 0) # indicator for Hispanic
 famhx <- ifelse(raDat$familyhxra == "Yes", 1, 0)
 
 age_diag <- raDat$agediag
