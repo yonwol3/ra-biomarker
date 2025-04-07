@@ -7,6 +7,20 @@ library(gridExtra)
 library(ggpubr)
 library(kableExtra)
 
+
+hpd <- function(x, alpha = 0.05){
+  
+  # x is the vector of bootstrap estimates
+  n = length(x)
+  m = round(n * alpha)
+  x = sort(x)
+  y = x[(n - m + 1):n] - x[1:m]
+  z = min(y)
+  k = which(y == z)[1]
+  c(x[k], x[n - m + k])
+  
+}
+
 #--------------------------------------#
 # Original biomarkers w/censoring at LOD
 #--------------------------------------#
@@ -23,7 +37,7 @@ mcmc<-mcmc_cens[[1]]
 kappa<-mcmc[,7:12] 
 
 biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
-
+biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
 
 ### changepoint density plots####
 outcome_colors <- brewer.pal(6, "Set1")
@@ -64,17 +78,16 @@ dev.off()
 ###
 
 kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
-
 for (i in 1:ncol(kappa)) {
   kappa_b<-kappa[, i]
   mean<-round(mean(kappa_b),2)
-  q_2<-round(quantile(kappa_b, 0.025), 2) # 2.5th quantile
-  q_97<-round(quantile(kappa_b, 0.975), 2) # 97.5th quantile
+  q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
+  q_97<-round(hpd(kappa_b)[2], 2) 
   kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
   kappa_summ[i, 1]<-biomarker_labels[i]
 }
 
-colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
+colnames(kappa_summ)<- c("biomarker","kappa mean[95% HPD CrI]")
 
 
 k <- 6
@@ -83,7 +96,7 @@ kappa <- mcmc[, 7:12]
 gamma <- mcmc[, 1:6]
 
 # Define labels for each dimension
-biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
+
 time_labels <- as.character(time_grid)
 iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
 
@@ -129,17 +142,18 @@ closest_threshold <- result_df %>%
   dplyr::ungroup()%>% 
   arrange(time)
 
-gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels)) # gamma summary (mean [95% CI])
+
+gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
 for ( i in 1:length(biomarker_labels)) {
   gamma_b<-gamma[, i]
   mean<-round(mean(gamma_b),2)
-  q_2<-round(quantile(gamma_b, 0.025), 2) # 2.5th quantile
-  q_97<-round(quantile(gamma_b, 0.975), 2) # 97.5th quantile
+  q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
+  q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
   gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
   gamma_summ[i, 1]<-biomarker_labels[i]
 }
 gamma_summ<- as.data.frame(gamma_summ)
-colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
+colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
 write.csv(closest_threshold,"../../censored_original_summary.csv")
@@ -214,17 +228,17 @@ dev.off()
 ### Table showing kappa, gamma, and the statistic (gamma + kappa)
 
 kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
-
 for (i in 1:ncol(kappa)) {
   kappa_b<-kappa[, i]
   mean<-round(mean(kappa_b),2)
-  q_2<-round(quantile(kappa_b, 0.025), 2) # 2.5th quantile
-  q_97<-round(quantile(kappa_b, 0.975), 2) # 97.5th quantile
+  q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
+  q_97<-round(hpd(kappa_b)[2], 2) 
   kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
   kappa_summ[i, 1]<-biomarker_labels[i]
 }
 
-colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
+colnames(kappa_summ)<- c("biomarker","kappa mean[95% HPD CrI]")
+
 
 
 k <- 12
@@ -274,17 +288,17 @@ closest_threshold <- result_df %>%
   dplyr::ungroup()%>% 
   arrange(time)
 
-gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels)) # gamma summary (mean [95% CI])
+gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
 for ( i in 1:length(biomarker_labels)) {
   gamma_b<-gamma[, i]
   mean<-round(mean(gamma_b),2)
-  q_2<-round(quantile(gamma_b, 0.025), 2) # 2.5th quantile
-  q_97<-round(quantile(gamma_b, 0.975), 2) # 97.5th quantile
+  q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
+  q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
   gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
   gamma_summ[i, 1]<-biomarker_labels[i]
 }
 gamma_summ<- as.data.frame(gamma_summ)
-colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
+colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
 write.csv(closest_threshold,"../../censored_new_summary.csv")

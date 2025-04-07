@@ -13,6 +13,7 @@ library(table1)
 library(naniar)
 library(mcmcse)
 library(gt)
+library(kableExtra)
 
 ## Table 1
 
@@ -313,8 +314,41 @@ final_gt_table <- combined_table %>%
   gt::opt_table_lines(extent = "all") %>%
   gt::cols_align("center")
 
-# Display the final table.
-final_gt_table
+
+
+
+
+
+# --- Generate the final table using kable and kableExtra ---
+var_labels<-unique(combined_table$var)
+table1_obj <- combined_table %>%
+  select(-var) %>%
+  kable(
+    caption = "Table 1: Descriptive Summary of Sample A and Sample B",
+    col.names = rep("", ncol(.)),
+    format = "pipe"
+  ) %>%
+  add_header_above(c(" " = 1, "Non-RA (N=210)" = 1, "RA (N=214)" = 1, "Non-RA (N=309)" = 1, "RA (N=309)" = 1)) %>%
+  add_header_above(c(" " = 1, "Sample A" = 2, "Sample B" = 2)) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+for (i in 1:length(var_labels)) {
+  if (i == 1) {
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 1, end_row = 2)
+  } else if (i == 2) {
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 3, end_row = 4)
+  } else if (i == 3) {
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 5, end_row = 7)
+  } else if (i == 4) {
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 8, end_row = 10)
+  } else {
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = i + 6, end_row = i + 6)
+  }
+}
+saveRDS(combined_table, file = "../../table1_obj_df.rds")
+saveRDS(table1_obj, file = "../../table1_obj.rds")
+
+
 
 
 
