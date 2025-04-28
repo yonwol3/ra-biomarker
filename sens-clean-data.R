@@ -1,10 +1,21 @@
 source ("clean-data.R")
 
+# Add Dichotomous variables
+
+clean$dic_igarfconc_<- ifelse(clean$igarfconc_>8.59151, "pos", "neg")
+clean$dic_igmrfconc_<- ifelse(clean$igmrfconc_>26.59495, "pos", "neg")
+clean$dic_iggrfconc_<- ifelse(clean$iggrfconc_ >15.79870, "pos", "neg")
+clean$dic_igaccpavgconc<-ifelse (clean$igaccpavgconc >110.07650, "pos", "neg")
+clean$dic_igmccpavgconc<- ifelse (clean$igmccpavgconc >202.07565, "pos", "neg")
+clean$dic_iggccpavgconc<- ifelse (clean$iggccpavgconc >7.66189, "pos", "neg")
+
+
 # remove observations that are t>0 (after diagnosis)
 # remove from both cases and controls
 
 clean_sens<- clean %>% 
               filter(time<=0)
+
 
 Y <- as.matrix(clean_sens[, 11:16])
 logY <- log(Y) # log transform responses
