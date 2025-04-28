@@ -107,7 +107,7 @@ ggarrange_args <- c(plot_list[1:12],  nrow = 3, ncol = 4,
                     ) 
 combined_plot<-do.call(ggarrange, ggarrange_args)
 final_plot <- annotate_figure(combined_plot, 
-                              top = text_grob("Serum Levels over Time with Smoothing Spline (Sample 2)", 
+                              top = text_grob("Serum Levels over Time with Smoothing Spline (Sample B)", 
                                               face = "bold", size = 14))
 print(final_plot)
 
