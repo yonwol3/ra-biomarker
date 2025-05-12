@@ -8,35 +8,39 @@ library(Microsoft365R)
 require(tidyverse)
 require(plyr)
 library(readxl)
+
 ## Data Cleaning
 
-#setwd("~/Documents/RA-Biomarker/")
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/forKevin.txt "
-temp_file <- tempfile(fileext = ".txt")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-raDat <- read.delim(temp_file, stringsAsFactors = FALSE)
+# onedrive <- get_business_onedrive()
+# file_path <- "Attachments/forKevin.txt "
+# file_path("~/Documents/RA-Biomarker/")
+# temp_file <- tempfile(fileext = ".txt")
+# onedrive$download_file(
+#   src = file_path,
+#   dest = temp_file,
+#   overwrite = TRUE
+# )
+# raDat <- read.delim(temp_file, stringsAsFactors = FALSE)
+# names(raDat) <- tolower(names(raDat))
+# unlink(temp_file)
+
+# onedrive <- get_business_onedrive()
+# file_path <- "Attachments/DOD_AddRace.xls"
+# temp_file <- tempfile(fileext = ".xls")
+# onedrive$download_file(
+#   src = file_path,
+#   dest = temp_file,
+#   overwrite = TRUE
+# )
+# race_clean <- read_xls(temp_file, sheet=2)
+# unlink(temp_file)
+
+setwd("~/Documents/RA-Biomarker/")
+raDat <- read.delim("~/Documents/RA-Biomarker/data/forKevin.txt", stringsAsFactors = FALSE)
 names(raDat) <- tolower(names(raDat))
-unlink(temp_file)
-
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/DOD_AddRace.xls"
-temp_file <- tempfile(fileext = ".xls")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-race_clean<-read_xls(temp_file, sheet=2)
-unlink(temp_file)
 
 
-
-raDat$race_ethnic<-race_clean$RACE_ETHNIC # the correct race/ethnicity values
+# raDat$race_ethnic<-race_clean$RACE_ETHNIC # the correct race/ethnicity values
 raDat_case <- subset(raDat, diagnosis == "RA")
 raDat_control <- subset(raDat, diagnosis == "Control")
 
@@ -46,6 +50,7 @@ raDat <- raDat[order(raDat$subj_id, raDat$sampnum),]
 raDat <- raDat[complete.cases(raDat[,serum_names]),] # remove one observation missing 3 measurements
 
 raDat$subj_id <- as.integer(factor(raDat$subj_id))
+raDat$study_id <- as.integer(factor(raDat$study_id))
 
 ## Generate Data Frame for Table 1
 
