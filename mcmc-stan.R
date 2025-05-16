@@ -94,11 +94,11 @@ summary(mcmc_new_trunc)
 stanmodel_new_cens <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-cens.stan", model_name = "stanmodel_new_cens")
 samples_new_cens <- sampling(stanmodel_new_cens, data = standata_new, iter = 5500, warmup = 500, 
                              chains = 4, thin = 5, check_data = TRUE, cores = 4)
-mcmc_newcens <- do.call(cbind, rstan::extract(samples_new_cens, 
+mcmc_new_cens <- do.call(cbind, rstan::extract(samples_new_cens, 
                                               pars = c(paste0("gamma[", 1:K, "]"), 
                                                        paste0("kappa[", 1:K, "]")), 
                                               permuted = TRUE))
-save(mcmc_new_trunc, file = "mcmc/mcmc_new_cens.RData")
+save(mcmc_new_cens, file = "mcmc/mcmc_new_cens.RData")
 summary(mcmc_new_cens)
 
 # Binarize Detection

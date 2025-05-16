@@ -21,12 +21,7 @@ minY <- apply(Y, 2, min)
 L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
 U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 
-
-
-#----------------------------#
 # Dichotomous outcome dataset 
-#----------------------------#
-
 
 onedrive<- get_business_onedrive()
 file_path <- "Attachments/KevinDat2.xlsx"
@@ -70,9 +65,6 @@ dat_2_di$subj_id <- as.character(as.integer(factor(dat_2_di$subj_id)))
 dat_2_di$t_yrs <- dat_2_di$t_days/365 # changing from days to years
 dat_2_di[ ,di_biomarkers] <- apply(dat_2_di[,di_biomarkers], 2, as.numeric)
 dat_2_di <- arrange(dat_2_di, as.numeric(subj_id), sampnum) %>% drop_na(all_of(di_biomarkers))
-
-
-
 
 
 
