@@ -8,13 +8,12 @@ data {
   int id[N];
   
   // data
-  vector[K] D_max[N];
-  vector[K] D_obs[N];
+  vector[K] D[N];
   vector[K] L[N];
   vector[K] U[N];
   vector[N] t;
   vector[N] g;
-  vector<lower=L, upper=U>[K] Y_obs[N];
+  vector<lower=L, upper=U>[K] Y[N];
 
   // hyperparameters
   vector[K] a;
@@ -46,8 +45,6 @@ transformed parameters {
   cov_matrix[K] Sigma_0 = diag_matrix(square(sigma_0));
   matrix[K,K] Sigma_e = diag_pre_multiply(sigma_e, corr_e);
   
-  
-
 }
 
 model {
@@ -71,7 +68,7 @@ model {
   }
   
   // Sample Data
-  Y_obs ~ multi_normal_cholesky(eta, Sigma_e);
+  Y ~ multi_normal_cholesky(eta, Sigma_e);
 
   // Priors
   mu ~ multi_normal(a, R);

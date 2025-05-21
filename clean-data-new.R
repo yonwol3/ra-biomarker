@@ -17,22 +17,28 @@ library(Microsoft365R)
 # unlink(temp_file)
 
 file_path <- "~/Documents/RA-Biomarker/data/KevinDat2.xlsx"
-dat_2raw <- read_xlsx(file_path)
-colnames(dat_2raw) <- tolower(colnames(dat_2raw))
+dat_2_raw <- read_xlsx(file_path)
+colnames(dat_2_raw) <- tolower(colnames(dat_2_raw))
 
-biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
-              "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
-              "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
+biomarkers<-c("aptivaccp3igg_≥5#00flu", "aptiva_acpafsiggvimentin2_≥5#00au",
+              "aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
+              "aptivaccp3iga_≥5#00flu", "aptiva_acpafsigavimentin2_≥5#00au",
+              "aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
+bin_biomarkers <- c("aptivaccp3igg_qual", "aptiva_acpafsiggvimentin2_qual",
+                    "aptiva_acpafsiggfibrinogen_qual", "aptiva_acpafsigghistone1_qual", 
+                    "aptivaccp3iga_qual", "aptiva_acpafsigavimentin2_qual",
+                    "aptiva_acpafsigafibrinogen_qual", "aptiva_acpafsigahistone1_qual")
 
-dat_2 <- dat_2raw %>% 
+dat_2 <- dat_2_raw %>% 
   dplyr::rename(diagnosis=casecontrol, 
                 study_id=masterstudyid,
                 subj_id=masterstudyidnumeric,
                 sampnum=sampordernum,
                 age=ageserumsample,
                 t_days=d_serum_ref) %>% 
-  select(study_id, subj_id, sampnum,diagnosis, age,t_days,year_dref,
-         gender,eversmoke,familyhxra,race_ethnic, all_of(biomarkers))
+  select(study_id, subj_id, sampnum,diagnosis, age, t_days, 
+         year_dref, gender, eversmoke, familyhxra, race_ethnic, 
+         all_of(biomarkers), all_of(bin_biomarkers))
 
 dat_2$subj_id <- ifelse(dat_2$diagnosis=="Control", paste0(dat_2$subj_id, "_1"), paste(dat_2$subj_id)) # control and case had the same subj ID
 dat_2$subj_id <- as.character(as.integer(factor(dat_2$subj_id)))
@@ -44,9 +50,10 @@ dat_2 <- arrange(dat_2, as.numeric(subj_id), sampnum) %>% drop_na(all_of(biomark
 
 # Outcome matrix
 Y <- as.matrix(subset(dat_2, select = biomarkers))
-colnames(Y) <- c("aptivaccp3iga","aptivaccp3igg",
-                 "aptiva_acpafsiggvimentin2","aptiva_acpafsiggfibrinogen","aptiva_acpafsigghistone1",
-                 "aptiva_acpafsigavimentin2","aptiva_acpafsigafibrinogen","aptiva_acpafsigahistone1")
+colnames(Y) <- c("aptivaccp3igg","aptiva_acpafsiggvimentin2",
+                 "aptiva_acpafsiggfibrinogen","aptiva_acpafsigghistone1",
+                 "aptivaccp3iga","aptiva_acpafsigavimentin2",
+                 "aptiva_acpafsigafibrinogen","aptiva_acpafsigahistone1")
 # Y <- apply(Y, 2, function(z) ifelse(z == 0, 1e-6, z))
 logY <- log(Y) # log transform responses
 
@@ -73,16 +80,25 @@ diagnosis <- ifelse(dat_2$diagnosis == "Case", 1, 0)
 
 rm(bage.tmp)
 
-
 # ID vector
 subj_id <- as.integer(factor(dat_2$subj_id, levels = unique(dat_2$subj_id)))
 study_id <- as.integer(factor(dat_2$study_id, levels = unique(dat_2$study_id)))
 
-cens_max <- apply(Y, 2, function(z) as.numeric(z == max(z)))
-cens_min <- apply(Y, 2, function(z) as.numeric(z == min(z)))
 maxY <- apply(Y, 2, max)
 minY <- apply(Y, 2, min)
 L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
 U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
+D <- apply(Y, 2, function(z) as.numeric(z == max(z)))
 
-clean <- data.frame(time,age_diag, fem, white, black,hispanic,famhx, subj_id, study_id, diagnosis, Y)
+clean <- data.frame(time, age_diag, fem, white, black, hispanic, famhx, subj_id, study_id, diagnosis, Y)
+
+# Dichotomus biomarker values
+
+Y_bin <- dat_2 %>%
+  select(all_of(bin_biomarkers))
+
+Y_bin <- as.matrix(Y_bin)
+Y_bin <- apply(Y_bin, 2, as.integer)
+colnames(Y_bin) <- colnames(Y)
+
+
