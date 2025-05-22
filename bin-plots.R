@@ -1,3 +1,6 @@
+###############################################
+# Binary model results table and figures 
+###############################################
 library(readxl)
 library(tidyverse)
 library(Microsoft365R)
@@ -21,19 +24,20 @@ hpd <- function(x, alpha = 0.05){
   
 }
 
+
 #--------------------------------------#
-# Original biomarkers w/censoring at LOD
+# Original dichotomus biomarkers 
 #--------------------------------------#
 onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_cens.RData"
+file_path <- "Attachments/mcmc_bin.RData"
 temp_file <- tempfile(fileext = ".RData")
 onedrive$download_file(
   src = file_path,
   dest = temp_file,
   overwrite = TRUE
 )
-mcmc_cens<- get(load(temp_file)[1])
-mcmc<-mcmc_cens
+mcmc_bin<- get(load(temp_file)[1])
+mcmc<-mcmc_bin
 kappa<-mcmc[ ,7:12] 
 gamma<-mcmc[ , 1:6]
 
@@ -44,7 +48,7 @@ biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACP
 outcome_colors <- brewer.pal(6, "Set1")
 outcome_colors[6] <- "#F781BF"
 
-png("figures/cens_change-point-dens-originalbiomarkers.png", 
+png("figures/bin_change-point-dens-originalbiomarkers.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
@@ -157,15 +161,15 @@ gamma_summ<- as.data.frame(gamma_summ)
 colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../censored_original_summary.csv")
+write.csv(closest_threshold,"../../bin_original_summary.csv")
 
 
 
 #--------------------------------------#
-# New biomarkers w/censoring at LOD
+# Bin New biomarkers 
 #--------------------------------------#
 onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_new_cens.RData"
+file_path <- "Attachments/mcmc_new_bin.RData"
 temp_file <- tempfile(fileext = ".RData")
 onedrive$download_file(
   src = file_path,
@@ -173,7 +177,7 @@ onedrive$download_file(
   overwrite = TRUE
 )
 mcmc_cens_new<- get(load(temp_file)[1])
-mcmc_new<-mcmc_new_cens
+mcmc_new<-mcmc_new_bin
 
 kappa <- mcmc_new[, 9:16]
 gamma <- mcmc_new[, 1:8]
@@ -196,7 +200,7 @@ names(outcome_colors) <- biomarkers
 ### changepoint density plots####
 
 
-png("figures/cens_new_change-point-dens.png", 
+png("figures/bin_new_change-point-dens.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
@@ -302,6 +306,4 @@ gamma_summ<- as.data.frame(gamma_summ)
 colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../censored_new_summary.csv")
-
-
+write.csv(closest_threshold,"../../bin_new_summary.csv")
