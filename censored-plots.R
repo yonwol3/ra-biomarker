@@ -174,8 +174,10 @@ onedrive$download_file(
 mcmc_cens_new<- get(load(temp_file)[1])
 mcmc_new<-mcmc_new_cens[[1]]
 
-kappa <- mcmc_new[, 13:24]
-gamma <- mcmc_new[, 1:12]
+idx_8<-c(1,2,5,6,7,10,11,12) # index for the 8 biomarkers out of the 12
+idx_8_k<- idx_8 +12 # to specify the kappa indexes from mcmc data for these 8 biomarkers
+kappa <- mcmc_new[, idx_8_k]
+gamma <- mcmc_new[, idx_8]
 
 # Define labels for each dimension
 biomarkers<-c("aptivaccp3iga","aptivaccp3igg",
@@ -183,12 +185,13 @@ biomarkers<-c("aptivaccp3iga","aptivaccp3igg",
               "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
               "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
               "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
+biomarkers<- biomarkers[idx_8]
 biomarkers <- sub("^aptiva", "", biomarkers)
 biomarkers<- sub("_≥5#00au", "", biomarkers)
 biomarkers<-sub("_","",biomarkers)
 biomarker_labels <- biomarkers
 
-outcome_colors <- brewer.pal(12, "Paired")
+outcome_colors <- brewer.pal(8, "Paired")
 names(outcome_colors) <- biomarkers
 
 
@@ -207,7 +210,7 @@ plot(density(kappa[,1]), lwd = 2,
      xlim = c(-20, 5),
      main = "Change Point Densities (Sample 2)")
 
-for (i in 2:12) {
+for (i in 2:8) {
   lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
 }
 
@@ -218,7 +221,7 @@ grid()
 legend("topleft", 
        legend = biomarker_labels,
        col = outcome_colors, 
-       lwd = rep(2, 12),
+       lwd = rep(2, 8),
        cex = 1)
 
 dev.off()
@@ -241,7 +244,7 @@ colnames(kappa_summ)<- c("biomarker","kappa mean[95% HPD CrI]")
 
 
 
-k <- 12
+k <- 8
 time_grid <- seq(-20, 10, by = 0.01)
 time_labels <- as.character(time_grid)
 iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
