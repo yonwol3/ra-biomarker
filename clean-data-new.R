@@ -5,19 +5,19 @@ library(readxl)
 library(tidyverse)
 library(Microsoft365R)
 
-# onedrive<- get_business_onedrive()
-# file_path <- "Attachments/KevinDat2.xlsx"
-# temp_file <- tempfile(fileext = ".xlsx")
-# onedrive$download_file(
-#   src = file_path,
-#   dest = temp_file,
-#   overwrite = TRUE
-# )
-# dat_2raw <- read_xlsx(temp_file)
-# unlink(temp_file)
+onedrive<- get_business_onedrive()
+file_path <- "Attachments/KevinDat2.xlsx"
+temp_file <- tempfile(fileext = ".xlsx")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+dat_2_raw <- read_xlsx(temp_file)
+unlink(temp_file)
 
-file_path <- "~/Documents/RA-Biomarker/data/KevinDat2.xlsx"
-dat_2_raw <- read_xlsx(file_path)
+# file_path <- "~/Documents/RA-Biomarker/data/KevinDat2.xlsx"
+# dat_2_raw <- read_xlsx(file_path)
 colnames(dat_2_raw) <- tolower(colnames(dat_2_raw))
 
 biomarkers<-c("aptivaccp3igg_≥5#00flu", "aptiva_acpafsiggvimentin2_≥5#00au",

@@ -127,66 +127,66 @@ ggarrange(plot_list[[1]],plot_list[[2]], plot_list[[3]],
 #---------------------------------------------------#
 # change-point density for the original biomarkers
 #---------------------------------------------------#
-source("clean-data.R")
-biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_trunc.RData"
-temp_file <- tempfile(fileext = ".RData")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-mcmc_trunc<- get(load(temp_file)[1])
-mcmc<-mcmc_trunc[[1]]
-kappa<-mcmc[,7:12] # change points only (no gamma (rate of change))
-
-png("figures/change-point-dens-originalbiomarkers.png", 
-    width = 1000, 
-    height = 1000,
-    res = 100, 
-    units = "px")
-
-plot(density(kappa[,1]), lwd = 2,
-     col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 1.5),
-     xlim = c(-20, 5),
-     main = "Change Point Densities")
-
-for (i in 2:6) {
-  lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
-}
-
-abline(v = 0, lty = 2, col = "blue")
-abline(h = 0, lty = 1, col = "black")
-grid()
-
-legend("topleft", 
-       legend = biomarkers,
-       col = outcome_colors, 
-       lwd = rep(2, 6),
-       cex = 1)
-
-dev.off()
-
-#-------------------------------------------#
-# calculate mean and 95% Credible Interval 
-#-------------------------------------------#
-credible_res <- data.frame(biomarker=character(0),mean = numeric(0), 
-                           credible_lower = numeric(0),
-                           credible_upper = numeric(0))
-
-for (i in 1:ncol(kappa)) {
-  credible_res[i, "mean"] <- round(mean(kappa[, i]), 2)         # mean 
-  credible_res[i, "credible_lower"] <- round(quantile(kappa[, i], 0.025), 2)  # 2.5th quantile
-  credible_res[i, "credible_upper"] <- round(quantile(kappa[, i], 0.975), 2)  # 97.5th quantile
-  credible_res[i, "biomarker"]<- biomarkers[i]
-}
-credible_res<-arrange(credible_res,mean)
-credible_res<-credible_res %>% 
-              mutate(`95% Credible Interval`=paste("[", credible_lower, ", ", credible_upper, "]"))%>%
-              select(biomarker, mean, `95% Credible Interval`)
-             
-write.csv(credible_res,"../../original_cp_ci.csv")
+# source("clean-data.R")
+# biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
+# onedrive<- get_business_onedrive()
+# file_path <- "Attachments/mcmc_trunc.RData"
+# temp_file <- tempfile(fileext = ".RData")
+# onedrive$download_file(
+#   src = file_path,
+#   dest = temp_file,
+#   overwrite = TRUE
+# )
+# mcmc_trunc<- get(load(temp_file)[1])
+# mcmc<-mcmc_trunc[[1]]
+# kappa<-mcmc[,7:12] # change points only (no gamma (rate of change))
+# 
+# png("figures/change-point-dens-originalbiomarkers.png", 
+#     width = 1000, 
+#     height = 1000,
+#     res = 100, 
+#     units = "px")
+# 
+# plot(density(kappa[,1]), lwd = 2,
+#      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
+#      ylim = c(0, 1.5),
+#      xlim = c(-20, 5),
+#      main = "Change Point Densities")
+# 
+# for (i in 2:6) {
+#   lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
+# }
+# 
+# abline(v = 0, lty = 2, col = "blue")
+# abline(h = 0, lty = 1, col = "black")
+# grid()
+# 
+# legend("topleft", 
+#        legend = biomarkers,
+#        col = outcome_colors, 
+#        lwd = rep(2, 6),
+#        cex = 1)
+# 
+# dev.off()
+# 
+# #-------------------------------------------#
+# # calculate mean and 95% Credible Interval 
+# #-------------------------------------------#
+# credible_res <- data.frame(biomarker=character(0),mean = numeric(0), 
+#                            credible_lower = numeric(0),
+#                            credible_upper = numeric(0))
+# 
+# for (i in 1:ncol(kappa)) {
+#   credible_res[i, "mean"] <- round(mean(kappa[, i]), 2)         # mean 
+#   credible_res[i, "credible_lower"] <- round(quantile(kappa[, i], 0.025), 2)  # 2.5th quantile
+#   credible_res[i, "credible_upper"] <- round(quantile(kappa[, i], 0.975), 2)  # 97.5th quantile
+#   credible_res[i, "biomarker"]<- biomarkers[i]
+# }
+# credible_res<-arrange(credible_res,mean)
+# credible_res<-credible_res %>% 
+#               mutate(`95% Credible Interval`=paste("[", credible_lower, ", ", credible_upper, "]"))%>%
+#               select(biomarker, mean, `95% Credible Interval`)
+#              
+# write.csv(credible_res,"../../original_cp_ci.csv")
 
 

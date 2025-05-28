@@ -1,6 +1,3 @@
-###############################################
-# Binary model results table and figures 
-###############################################
 library(readxl)
 library(tidyverse)
 library(Microsoft365R)
@@ -24,21 +21,19 @@ hpd <- function(x, alpha = 0.05){
   
 }
 
-
 #--------------------------------------#
-# Original dichotomus biomarkers 
+# Original biomarkers w/truncation at LOD
 #--------------------------------------#
 onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_bin.RData"
+file_path <- "Attachments/mcmc_trunc.RData"
 temp_file <- tempfile(fileext = ".RData")
 onedrive$download_file(
   src = file_path,
   dest = temp_file,
   overwrite = TRUE
 )
-mcmc_bin<- get(load(temp_file)[1])
-mcmc<-mcmc_bin
-kappa<-mcmc[ ,7:12] 
+mcmc<- get(load(temp_file)[1])
+kappa<-mcmc[ ,7:12]
 gamma<-mcmc[ , 1:6]
 
 biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
@@ -48,7 +43,7 @@ biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACP
 outcome_colors <- brewer.pal(6, "Set1")
 outcome_colors[6] <- "#F781BF"
 
-png("figures/bin_change-point-dens-originalbiomarkers.png", 
+png("figures/change-point-dens-originalbiomarkers.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
@@ -56,8 +51,8 @@ png("figures/bin_change-point-dens-originalbiomarkers.png",
 
 plot(density(kappa[,1]), lwd = 2,
      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 0.8),
-     xlim = c(-20, 10),
+     ylim = c(0, 1.5),
+     xlim = c(-20, 5),
      main = "Change Point Densities (Sample A)")
 
 for (i in 2:6) {
@@ -161,23 +156,23 @@ gamma_summ<- as.data.frame(gamma_summ)
 colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../bin_original_summary.csv")
+write.csv(closest_threshold,"../../original_summary.csv")
 
 
 
 #--------------------------------------#
-# Bin New biomarkers 
+# New biomarkers w/truncation at LOD
 #--------------------------------------#
 onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_new_bin.RData"
+file_path <- "Attachments/mcmc_new_trunc.RData"
 temp_file <- tempfile(fileext = ".RData")
 onedrive$download_file(
   src = file_path,
   dest = temp_file,
   overwrite = TRUE
 )
-mcmc_cens_new<- get(load(temp_file)[1])
-mcmc_new<-mcmc_new_bin
+mcmc_new<- get(load(temp_file)[1])
+
 
 kappa <- mcmc_new[, 9:16]
 gamma <- mcmc_new[, 1:8]
@@ -194,7 +189,7 @@ names(outcome_colors) <- biomarkers
 ### changepoint density plots####
 
 
-png("figures/bin_new_change-point-dens.png", 
+png("figures/new_change-point-dens.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
@@ -203,7 +198,7 @@ png("figures/bin_new_change-point-dens.png",
 plot(density(kappa[,1]), lwd = 2,
      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
      ylim = c(0, 0.8),
-     xlim = c(-20, 10),
+     xlim = c(-20, 5),
      main = "Change Point Densities (Sample B)")
 
 for (i in 2:8) {
@@ -300,4 +295,4 @@ gamma_summ<- as.data.frame(gamma_summ)
 colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../bin_new_summary.csv")
+write.csv(closest_threshold,"../../new_summary.csv")

@@ -52,7 +52,7 @@ png("figures/cens_change-point-dens-originalbiomarkers.png",
 
 plot(density(kappa[,1]), lwd = 2,
      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 1.5),
+     ylim = c(0, 1),
      xlim = c(-20, 5),
      main = "Change Point Densities (Sample A)")
 
@@ -179,14 +179,8 @@ kappa <- mcmc_new[, 9:16]
 gamma <- mcmc_new[, 1:8]
 
 # Define labels for each dimension
-biomarkers<-c("aptivaccp3igg_≥5#00flu", "aptiva_acpafsiggvimentin2_≥5#00au",
-              "aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
-              "aptivaccp3iga_≥5#00flu", "aptiva_acpafsigavimentin2_≥5#00au",
-              "aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
-biomarkers <- sub("^aptiva", "", biomarkers)
-biomarkers<- sub("≥5#00flu", "", biomarkers)
-biomarkers<- sub("_≥5#00au", "", biomarkers)
-biomarkers<-sub("_","",biomarkers)
+biomarkers<-c("anti-CCP3 (IgG)","anti-citVim2 (IgG)", "anti-citFib (IgG)","anti-citHis1 (IgG)",
+              "anti-CCP3 (IgA)","anti-citVim2 (IgA)","anti-citFib (IgA)","anti-citHis1 (IgA)")
 biomarker_labels <- biomarkers
 
 outcome_colors <- brewer.pal(8, "Paired")
@@ -204,7 +198,7 @@ png("figures/cens_new_change-point-dens.png",
 
 plot(density(kappa[,1]), lwd = 2,
      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 3),
+     ylim = c(0, 0.8),
      xlim = c(-20, 5),
      main = "Change Point Densities (Sample B)")
 

@@ -12,18 +12,16 @@ library(ggpubr)
 
 source("clean-data-new.R")
 dat_2$diagnosis <- factor(dat_2$diagnosis, levels = c("Control", "Case"), labels = c("no_RA", "RA"))
+biomarkers<-c("aptivaccp3igg_≥5#00flu", "aptiva_acpafsiggvimentin2_≥5#00au",
+              "aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
+              "aptivaccp3iga_≥5#00flu", "aptiva_acpafsigavimentin2_≥5#00au",
+              "aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
 
-biomarkers<-c("aptivaccp3iga_≥5#00flu","aptivaccp3igg_≥5#00flu",
-                          "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
-                          "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
-                          "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
-                          "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
-biomarkers_labels<- sub("^aptiva", "", biomarkers)
-biomarkers_labels<- sub("_≥5#00au", "", biomarkers_labels)
-biomarkers_labels<-sub("_≥5#00flu","",biomarkers_labels)
-biomarkers_labels<-sub("_","",biomarkers_labels)
+biomarkers_labels<-c("anti-CCP3 (IgG)","anti-citVim2 (IgG)", "anti-citFib (IgG)","anti-citHis1 (IgG)",
+              "anti-CCP3 (IgA)","anti-citVim2 (IgA)","anti-citFib (IgA)","anti-citHis1 (IgA)")
 
 outcome_colors <- brewer.pal(12, "Paired")
+
 names(outcome_colors) <- biomarkers
 
 # Define colors for 'RA' and 'no_RA'
@@ -102,7 +100,7 @@ for (i in seq_along(biomarkers)) {
 }
 
 
-ggarrange_args <- c(plot_list[1:12],  nrow = 3, ncol = 4, 
+ggarrange_args <- c(plot_list[1:8],  nrow = 2, ncol = 4, 
                     legend = "right", align = "v", common.legend = TRUE
                     ) 
 combined_plot<-do.call(ggarrange, ggarrange_args)
@@ -110,70 +108,70 @@ final_plot <- annotate_figure(combined_plot,
                               top = text_grob("Serum Levels over Time with Smoothing Spline (Sample B)", 
                                               face = "bold", size = 14))
 print(final_plot)
-
-#-------------------------------------------#  
-# Density plots from posterior distribution of
-# model parameters (for 12 biomarkers)
-#--------------------------------------------#
-
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_new_trunc.RData"
-temp_file <- tempfile(fileext = ".RData")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-mcmc_new_trunc<- get(load(temp_file)[1])
-mcmc<-mcmc_new_trunc[[1]]
-kappa<-mcmc[,13:24] # change points only (no gamma (rate of change))
-
-png("figures/change-point-dens-new-biomarkers.png", 
-    width = 1000, 
-    height = 1000,
-    res = 100, 
-    units = "px")
-
-plot(density(kappa[,1]), lwd = 2,
-     col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
-     ylim = c(0, 0.8),
-     xlim = c(-20, 5),
-     main = "Change Point Densities (Sample 2)")
-
-for (i in 2:12) {
-  lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
-}
-
-abline(v = 0, lty = 2, col = "blue")
-abline(h = 0, lty = 1, col = "black")
-grid()
-
-legend("topleft", 
-       legend = biomarkers_labels,
-       col = outcome_colors, 
-       lwd = rep(2, 12),
-       cex = 1)
-
-dev.off()
-
-
-#-------------------------------------------#
-# calculate mean and 95% Credible Interval 
-#-------------------------------------------#
-credible_res <- data.frame(biomarker=character(0),mean = numeric(0), 
-                           credible_lower = numeric(0),
-                           credible_upper = numeric(0))
-
-for (i in 1:ncol(kappa)) {
-  credible_res[i, "mean"] <- round(mean(kappa[, i]), 2)         # mean 
-  credible_res[i, "credible_lower"] <- round(quantile(kappa[, i], 0.025), 2)  # 2.5th quantile
-  credible_res[i, "credible_upper"] <- round(quantile(kappa[, i], 0.975), 2)  # 97.5th quantile
-  credible_res[i, "biomarker"]<- biomarkers_labels[i]
-}
-credible_res<-arrange(credible_res,mean)
-credible_res<-credible_res %>% 
-  mutate(`95% Credible Interval`=paste("[", credible_lower, ", ", credible_upper, "]"))%>%
-  select(biomarker, mean, `95% Credible Interval`)
-
-write.csv(credible_res,"../../new_cp_ci.csv")
+# 
+# #-------------------------------------------#  
+# # Density plots from posterior distribution of
+# # model parameters (for 12 biomarkers)
+# #--------------------------------------------#
+# 
+# onedrive<- get_business_onedrive()
+# file_path <- "Attachments/mcmc_new_trunc.RData"
+# temp_file <- tempfile(fileext = ".RData")
+# onedrive$download_file(
+#   src = file_path,
+#   dest = temp_file,
+#   overwrite = TRUE
+# )
+# mcmc_new_trunc<- get(load(temp_file)[1])
+# mcmc<-mcmc_new_trunc[[1]]
+# kappa<-mcmc[,13:24] # change points only (no gamma (rate of change))
+# 
+# png("figures/change-point-dens-new-biomarkers.png", 
+#     width = 1000, 
+#     height = 1000,
+#     res = 100, 
+#     units = "px")
+# 
+# plot(density(kappa[,1]), lwd = 2,
+#      col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
+#      ylim = c(0, 0.8),
+#      xlim = c(-20, 5),
+#      main = "Change Point Densities (Sample 2)")
+# 
+# for (i in 2:12) {
+#   lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
+# }
+# 
+# abline(v = 0, lty = 2, col = "blue")
+# abline(h = 0, lty = 1, col = "black")
+# grid()
+# 
+# legend("topleft", 
+#        legend = biomarkers_labels,
+#        col = outcome_colors, 
+#        lwd = rep(2, 12),
+#        cex = 1)
+# 
+# dev.off()
+# 
+# 
+# #-------------------------------------------#
+# # calculate mean and 95% Credible Interval 
+# #-------------------------------------------#
+# credible_res <- data.frame(biomarker=character(0),mean = numeric(0), 
+#                            credible_lower = numeric(0),
+#                            credible_upper = numeric(0))
+# 
+# for (i in 1:ncol(kappa)) {
+#   credible_res[i, "mean"] <- round(mean(kappa[, i]), 2)         # mean 
+#   credible_res[i, "credible_lower"] <- round(quantile(kappa[, i], 0.025), 2)  # 2.5th quantile
+#   credible_res[i, "credible_upper"] <- round(quantile(kappa[, i], 0.975), 2)  # 97.5th quantile
+#   credible_res[i, "biomarker"]<- biomarkers_labels[i]
+# }
+# credible_res<-arrange(credible_res,mean)
+# credible_res<-credible_res %>% 
+#   mutate(`95% Credible Interval`=paste("[", credible_lower, ", ", credible_upper, "]"))%>%
+#   select(biomarker, mean, `95% Credible Interval`)
+# 
+# write.csv(credible_res,"../../new_cp_ci.csv")
 
