@@ -10,15 +10,15 @@ The repository contains codes, figures and tables that are used to in the resear
 - contains stan code (for both truncation and censored models)
 ### .R files 
 contain various r-scripts related to data cleaning, modeling and figure/table generation including:
-- censored-plots.R contains code to generate the posterior density plots and posterior summaries for censored model (both 6 and 12 biomarkers) 
+- censored-plots.R contains code to generate the posterior density plots and posterior summaries for censored model (both sample A and B biomarkers) 
 - clean-data-new.R data cleaning for sample B
 - clean-data.R: data cleaning for sample A
-- loess-other-biomarkers.R; loess smoothing plots for the 12 biomarkers in sample B
 - mcmc-stan.R; all R codes that interface with stan to conduct MCMC sampling for all models
-- plot-new-biomarkers.R; code to generate the posterior density plots for the truncated model of 12 biomarkers
-- plots.R; code to generate posterior density plots, loess plots for the truncated model of 6 biomarkers.
-- sens-clean-data-new.R; data cleaning of 12 biomarkers for the sensibility analysis (reported in Supplement)
-- sens-clean-data.R; data cleaning of the 6 biomarkers for the sensibility analysis (reported in Supplement)
-- tables.R; includes  code used to generate table1, the posterior summaries of the truncated model( for both 6 and 12 biomarkers)
+- plot-new-biomarkers.R; code to generate the loess plots of sample B biomakers
+- plots.R; code to generate the loess plots of sample A biomakers
+- sens-clean-data-new.R; data cleaning of sample B biomarkers for the sensibility analysis (reported in Supplement)
+- sens-clean-data.R; data cleaning of sample A biomarkers for the sensibility analysis (reported in Supplement)
+- tables.R; includes  code used to generate table1
+- truncated-plots.R; contains code to generate the posterior density plots and posterior summaries for the truncated (main) model (both sample A and B biomarkers) 
 
 ## References
