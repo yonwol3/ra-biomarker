@@ -6,6 +6,8 @@ library(RColorBrewer)
 library(gridExtra)
 library(ggpubr)
 library(kableExtra)
+library(magick)
+library(cowplot)
 
 
 hpd <- function(x, alpha = 0.05){
@@ -296,3 +298,29 @@ colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
 write.csv(closest_threshold,"../../new_summary.csv")
+
+
+# combining the density plots into one plot for the main figure
+
+img1 <- image_read("figures/change-point-dens-originalbiomarkers.png")
+img2 <- image_read("figures/new_change-point-dens.png")
+
+# Create ggplot-like objects from the images
+g1 <- ggdraw() +
+  draw_image(img1, scale = 1) +
+  theme(plot.margin = unit(rep(0, 4), "cm"))
+
+g2 <- ggdraw() +
+  draw_image(img2, scale = 1) +
+  theme(plot.margin = unit(rep(0, 4), "cm"))
+
+# Arrange side by side with labels A and B
+grid_plot <- plot_grid(
+  g1, g2,
+  labels     = c("A", "B"),
+  label_size = 22,
+  ncol       = 2,
+  align      = "hv"
+)
+
+print(grid_plot)

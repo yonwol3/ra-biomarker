@@ -11,18 +11,18 @@ library(readxl)
 
 ## Data Cleaning
 
-# onedrive <- get_business_onedrive()
-# file_path <- "Attachments/forKevin.txt "
+onedrive <- get_business_onedrive()
+file_path <- "Attachments/forKevin.txt "
 # file_path("~/Documents/RA-Biomarker/")
-# temp_file <- tempfile(fileext = ".txt")
-# onedrive$download_file(
-#   src = file_path,
-#   dest = temp_file,
-#   overwrite = TRUE
-# )
-# raDat <- read.delim(temp_file, stringsAsFactors = FALSE)
-# names(raDat) <- tolower(names(raDat))
-# unlink(temp_file)
+temp_file <- tempfile(fileext = ".txt")
+onedrive$download_file(
+  src = file_path,
+  dest = temp_file,
+  overwrite = TRUE
+)
+raDat <- read.delim(temp_file, stringsAsFactors = FALSE)
+names(raDat) <- tolower(names(raDat))
+unlink(temp_file)
 
 # onedrive <- get_business_onedrive()
 # file_path <- "Attachments/DOD_AddRace.xls"
@@ -35,9 +35,9 @@ library(readxl)
 # race_clean <- read_xls(temp_file, sheet=2)
 # unlink(temp_file)
 
-setwd("~/Documents/RA-Biomarker/")
-raDat <- read.delim("~/Documents/RA-Biomarker/data/forKevin.txt", stringsAsFactors = FALSE)
-names(raDat) <- tolower(names(raDat))
+# setwd("~/Documents/RA-Biomarker/")
+# raDat <- read.delim("~/Documents/RA-Biomarker/data/forKevin.txt", stringsAsFactors = FALSE)
+# names(raDat) <- tolower(names(raDat))
 
 # raDat$race_ethnic<-race_clean$RACE_ETHNIC # the correct race/ethnicity values
 raDat_case <- subset(raDat, diagnosis == "RA")

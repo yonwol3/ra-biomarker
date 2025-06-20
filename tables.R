@@ -362,232 +362,232 @@ saveRDS(table1_obj, file = "../../table1_obj.rds")
 
 # function to find highest posterior density interval
 
-hpd <- function(x, alpha = 0.05){
-  
-  # x is the vector of bootstrap estimates
-  n = length(x)
-  m = round(n * alpha)
-  x = sort(x)
-  y = x[(n - m + 1):n] - x[1:m]
-  z = min(y)
-  k = which(y == z)[1]
-  c(x[k], x[n - m + k])
-  
-}
-
-
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_trunc.RData"
-temp_file <- tempfile(fileext = ".RData")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-mcmc_trunc<- get(load(temp_file)[1])
-mcmc<-mcmc_trunc[[1]]
-
-# Number of biomarkers being analyzed
-k <- 6
-
-# Define the time grid
-time_grid <- seq(-20, 10, by = 0.01)
-
-# Extract kappa and gamma from the mcmc data
-kappa <- mcmc[, 7:12]
-gamma <- mcmc[, 1:6]
-
-biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
-time_labels <- as.character(time_grid)
-iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
-
-# Create a 3-dimensional array with named dimensions:
-# Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
-             dimnames = list(
-               biomarker = biomarker_labels,
-               time = time_labels,
-               iteration = iteration_labels
-             ))
-
-# Loop over biomarkers, time grid, and iterations to fill the array.
-for (b in 1:k) {
-  gamma_b <- gamma[, b]     # gamma values for biomarker b
-  kappa_b <- kappa[, b]     # kappa values for biomarker b
-  
-  for (i in seq_along(time_grid)) {
-    t <- time_grid[i]
-    for (j in 1:nrow(kappa)) {
-      res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
-    }
-  }
-}
-
-# Convert the array to a data frame.
-result_df <- as.data.frame.table(res, responseName = "value")
-colnames(result_df) <- c("biomarker", "time", "iteration", "value")
-
-result_df$time <-as.numeric(as.character(result_df$time))
-
-# Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
-result_df <- result_df %>% 
-  dplyr::group_by(biomarker, time) %>% 
-  dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
-  arrange(desc(prop_positive))
-
-# select time where absolute difference between prop_positive and 0.9 is minimized
-
-closest_threshold <- result_df %>% 
-  dplyr::group_by(biomarker) %>% 
-  dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
-  dplyr::ungroup()%>% 
-  arrange(time)
-
-
-# Gamma only (mean (95% HPDI))
-
-gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
-for ( i in 1:length(biomarker_labels)) {
-  gamma_b<-gamma[, i]
-  mean<-round(mean(gamma_b),2)
-  q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
-  q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-  gamma_summ[i, 1]<-biomarker_labels[i]
-}
-gamma_summ<- as.data.frame(gamma_summ)
-colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
-
-# kappa only (mean (95% HPDI))
-kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
-for (i in 1:ncol(kappa)) {
-  kappa_b<-kappa[, i]
-  mean<-round(mean(kappa_b),2)
-  q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
-  q_97<-round(hpd(kappa_b)[2], 2) 
-  kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-  kappa_summ[i, 1]<-biomarker_labels[i]
-}
-
-colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
-
-closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
-closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../original_prob_ci.csv")
-
-#------------------------------------------------#
-#
-# change-point+ magnitude(90% prob being >0)
-# New Biomarkers
-#
-#------------------------------------------------#
-
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_new_trunc.RData"
-temp_file <- tempfile(fileext = ".RData")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-mcmc_trunc_new<- get(load(temp_file)[1])
-mcmc_new<-mcmc_trunc_new[[1]]
-
-# Number of biomarkers being analyzed
-k <- 12
-
-# Define the time grid
-time_grid <- seq(-20, 10, by = 0.01)
-
-# Extract kappa and gamma from the mcmc data
-kappa <- mcmc_new[, 13:24]
-gamma <- mcmc_new[, 1:12]
-
-# Define labels for each dimension
-biomarkers<-c("aptivaccp3iga","aptivaccp3igg",
-              "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
-              "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
-              "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
-              "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
-biomarkers <- sub("^aptiva", "", biomarkers)
-biomarkers<- sub("_≥5#00au", "", biomarkers)
-biomarkers<-sub("_","",biomarkers)
-biomarker_labels <- biomarkers
-
-time_labels <- as.character(time_grid)
-iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
-
-# Create a 3-dimensional array with named dimensions:
-# Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
-             dimnames = list(
-               biomarker = biomarker_labels,
-               time = time_labels,
-               iteration = iteration_labels
-             ))
-
-# Loop over biomarkers, time grid, and iterations to fill the array.
-for (b in 1:k) {
-  gamma_b <- gamma[, b]     # gamma values for biomarker b
-  kappa_b <- kappa[, b]     # kappa values for biomarker b
-  
-  for (i in seq_along(time_grid)) {
-    t <- time_grid[i]
-    for (j in 1:nrow(kappa)) {
-      res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
-    }
-  }
-}
-
-# Convert the array to a data frame.
-result_df_new<- as.data.frame.table(res, responseName = "value")
-colnames(result_df_new) <- c("biomarker", "time", "iteration", "value")
-
-result_df_new$time <-as.numeric(as.character(result_df_new$time))
-
-# Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
-result_df_new <- result_df_new %>% 
-  dplyr::group_by(biomarker, time) %>% 
-  dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
-  arrange(desc(prop_positive))
-
-# select time where absolute difference between prop_positive and 0.9 is minimized
-
-closest_threshold_new<- result_df_new %>% 
-  dplyr::group_by(biomarker) %>% 
-  dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
-  dplyr::ungroup()%>% 
-  arrange(time)
-
-# Gamma only (mean (95% HPDI))
-
-gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
-for ( i in 1:length(biomarker_labels)) {
-  gamma_b<-gamma[, i]
-  mean<-round(mean(gamma_b),2)
-  q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
-  q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-  gamma_summ[i, 1]<-biomarker_labels[i]
-}
-gamma_summ<- as.data.frame(gamma_summ)
-colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
-
-# kappa only (mean (95% HPDI))
-kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
-for (i in 1:ncol(kappa)) {
-  kappa_b<-kappa[, i]
-  mean<-round(mean(kappa_b),2)
-  q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
-  q_97<-round(hpd(kappa_b)[2], 2) 
-  kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-  kappa_summ[i, 1]<-biomarker_labels[i]
-}
-
-colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
-
-closest_threshold_new<-left_join(closest_threshold_new,kappa_summ, by="biomarker") 
-closest_threshold_new<-left_join(closest_threshold_new, gamma_summ, by="biomarker")
-write.csv(closest_threshold_new,"../../new_prob_ci.csv")
+# hpd <- function(x, alpha = 0.05){
+#   
+#   # x is the vector of bootstrap estimates
+#   n = length(x)
+#   m = round(n * alpha)
+#   x = sort(x)
+#   y = x[(n - m + 1):n] - x[1:m]
+#   z = min(y)
+#   k = which(y == z)[1]
+#   c(x[k], x[n - m + k])
+#   
+# }
+# 
+# 
+# onedrive<- get_business_onedrive()
+# file_path <- "Attachments/mcmc_trunc.RData"
+# temp_file <- tempfile(fileext = ".RData")
+# onedrive$download_file(
+#   src = file_path,
+#   dest = temp_file,
+#   overwrite = TRUE
+# )
+# mcmc_trunc<- get(load(temp_file)[1])
+# mcmc<-mcmc_trunc[[1]]
+# 
+# # Number of biomarkers being analyzed
+# k <- 6
+# 
+# # Define the time grid
+# time_grid <- seq(-20, 10, by = 0.01)
+# 
+# # Extract kappa and gamma from the mcmc data
+# kappa <- mcmc[, 7:12]
+# gamma <- mcmc[, 1:6]
+# 
+# biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
+# time_labels <- as.character(time_grid)
+# iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
+# 
+# # Create a 3-dimensional array with named dimensions:
+# # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
+# res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
+#              dimnames = list(
+#                biomarker = biomarker_labels,
+#                time = time_labels,
+#                iteration = iteration_labels
+#              ))
+# 
+# # Loop over biomarkers, time grid, and iterations to fill the array.
+# for (b in 1:k) {
+#   gamma_b <- gamma[, b]     # gamma values for biomarker b
+#   kappa_b <- kappa[, b]     # kappa values for biomarker b
+#   
+#   for (i in seq_along(time_grid)) {
+#     t <- time_grid[i]
+#     for (j in 1:nrow(kappa)) {
+#       res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
+#     }
+#   }
+# }
+# 
+# # Convert the array to a data frame.
+# result_df <- as.data.frame.table(res, responseName = "value")
+# colnames(result_df) <- c("biomarker", "time", "iteration", "value")
+# 
+# result_df$time <-as.numeric(as.character(result_df$time))
+# 
+# # Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
+# result_df <- result_df %>% 
+#   dplyr::group_by(biomarker, time) %>% 
+#   dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
+#   arrange(desc(prop_positive))
+# 
+# # select time where absolute difference between prop_positive and 0.9 is minimized
+# 
+# closest_threshold <- result_df %>% 
+#   dplyr::group_by(biomarker) %>% 
+#   dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
+#   dplyr::ungroup()%>% 
+#   arrange(time)
+# 
+# 
+# # Gamma only (mean (95% HPDI))
+# 
+# gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
+# for ( i in 1:length(biomarker_labels)) {
+#   gamma_b<-gamma[, i]
+#   mean<-round(mean(gamma_b),2)
+#   q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
+#   q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
+#   gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
+#   gamma_summ[i, 1]<-biomarker_labels[i]
+# }
+# gamma_summ<- as.data.frame(gamma_summ)
+# colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
+# 
+# # kappa only (mean (95% HPDI))
+# kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
+# for (i in 1:ncol(kappa)) {
+#   kappa_b<-kappa[, i]
+#   mean<-round(mean(kappa_b),2)
+#   q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
+#   q_97<-round(hpd(kappa_b)[2], 2) 
+#   kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
+#   kappa_summ[i, 1]<-biomarker_labels[i]
+# }
+# 
+# colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
+# 
+# closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
+# closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
+# write.csv(closest_threshold,"../../original_prob_ci.csv")
+# 
+# #------------------------------------------------#
+# #
+# # change-point+ magnitude(90% prob being >0)
+# # New Biomarkers
+# #
+# #------------------------------------------------#
+# 
+# onedrive<- get_business_onedrive()
+# file_path <- "Attachments/mcmc_new_trunc.RData"
+# temp_file <- tempfile(fileext = ".RData")
+# onedrive$download_file(
+#   src = file_path,
+#   dest = temp_file,
+#   overwrite = TRUE
+# )
+# mcmc_trunc_new<- get(load(temp_file)[1])
+# mcmc_new<-mcmc_trunc_new[[1]]
+# 
+# # Number of biomarkers being analyzed
+# k <- 12
+# 
+# # Define the time grid
+# time_grid <- seq(-20, 10, by = 0.01)
+# 
+# # Extract kappa and gamma from the mcmc data
+# kappa <- mcmc_new[, 13:24]
+# gamma <- mcmc_new[, 1:12]
+# 
+# # Define labels for each dimension
+# biomarkers<-c("aptivaccp3iga","aptivaccp3igg",
+#               "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
+#               "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
+#               "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
+#               "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
+# biomarkers <- sub("^aptiva", "", biomarkers)
+# biomarkers<- sub("_≥5#00au", "", biomarkers)
+# biomarkers<-sub("_","",biomarkers)
+# biomarker_labels <- biomarkers
+# 
+# time_labels <- as.character(time_grid)
+# iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
+# 
+# # Create a 3-dimensional array with named dimensions:
+# # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
+# res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
+#              dimnames = list(
+#                biomarker = biomarker_labels,
+#                time = time_labels,
+#                iteration = iteration_labels
+#              ))
+# 
+# # Loop over biomarkers, time grid, and iterations to fill the array.
+# for (b in 1:k) {
+#   gamma_b <- gamma[, b]     # gamma values for biomarker b
+#   kappa_b <- kappa[, b]     # kappa values for biomarker b
+#   
+#   for (i in seq_along(time_grid)) {
+#     t <- time_grid[i]
+#     for (j in 1:nrow(kappa)) {
+#       res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
+#     }
+#   }
+# }
+# 
+# # Convert the array to a data frame.
+# result_df_new<- as.data.frame.table(res, responseName = "value")
+# colnames(result_df_new) <- c("biomarker", "time", "iteration", "value")
+# 
+# result_df_new$time <-as.numeric(as.character(result_df_new$time))
+# 
+# # Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
+# result_df_new <- result_df_new %>% 
+#   dplyr::group_by(biomarker, time) %>% 
+#   dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
+#   arrange(desc(prop_positive))
+# 
+# # select time where absolute difference between prop_positive and 0.9 is minimized
+# 
+# closest_threshold_new<- result_df_new %>% 
+#   dplyr::group_by(biomarker) %>% 
+#   dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
+#   dplyr::ungroup()%>% 
+#   arrange(time)
+# 
+# # Gamma only (mean (95% HPDI))
+# 
+# gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
+# for ( i in 1:length(biomarker_labels)) {
+#   gamma_b<-gamma[, i]
+#   mean<-round(mean(gamma_b),2)
+#   q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
+#   q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
+#   gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
+#   gamma_summ[i, 1]<-biomarker_labels[i]
+# }
+# gamma_summ<- as.data.frame(gamma_summ)
+# colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
+# 
+# # kappa only (mean (95% HPDI))
+# kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
+# for (i in 1:ncol(kappa)) {
+#   kappa_b<-kappa[, i]
+#   mean<-round(mean(kappa_b),2)
+#   q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
+#   q_97<-round(hpd(kappa_b)[2], 2) 
+#   kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
+#   kappa_summ[i, 1]<-biomarker_labels[i]
+# }
+# 
+# colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
+# 
+# closest_threshold_new<-left_join(closest_threshold_new,kappa_summ, by="biomarker") 
+# closest_threshold_new<-left_join(closest_threshold_new, gamma_summ, by="biomarker")
+# write.csv(closest_threshold_new,"../../new_prob_ci.csv")
 
 

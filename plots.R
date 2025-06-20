@@ -34,7 +34,7 @@ clean <- clean %>%
 ## LOESS Plot
 
 # Assuming the original 'diagnosis' variable uses 0 for 'no_RA' and 1 for 'RA'
-clean$diagnosis <- factor(clean$diagnosis, levels = c(0, 1), labels = c("no_RA", "RA"))
+clean$diagnosis <- factor(clean$diagnosis, levels = c(0, 1), labels = c("No RA", "RA"))
 
 # List of outcome variables
 outcome_vars <-colnames(Y)
@@ -47,7 +47,7 @@ names(outcome_colors) <- outcome_vars
 # Convert 'diagnosis' to a factor with explicit levels and labels
 
 # Define colors for 'RA' and 'no_RA'
-group_colors <- c("RA" = "dodgerblue4", "no_RA" = "grey")  # Blue for RA, gray for no_RA
+group_colors <- c("RA" = "dodgerblue4", "No RA" = "grey")  # Blue for RA, gray for no_RA
 
 # Transparency for scatter points
 point_alpha <- 0.5
@@ -69,7 +69,7 @@ for (i in seq_along(outcome_vars)) {
   spline_ra <- smooth.spline(df_ra$time, df_ra$outcome, df = 4)
   
   # Fit smooth.spline for 'no_RA'
-  df_no_ra <- df_plot[df_plot$diagnosis == "no_RA", ]
+  df_no_ra <- df_plot[df_plot$diagnosis == "No RA", ]
   spline_no_ra <- smooth.spline(df_no_ra$time, df_no_ra$outcome, df = 4)
   
   # Create a sequence of time points for smooth curves
@@ -81,7 +81,7 @@ for (i in seq_along(outcome_vars)) {
   
   # Create data frames for the fitted spline lines
   df_spline_ra <- data.frame(time = pred_ra$x, outcome = pred_ra$y, diagnosis = "RA")
-  df_spline_no_ra <- data.frame(time = pred_no_ra$x, outcome = pred_no_ra$y, diagnosis = "no_RA")
+  df_spline_no_ra <- data.frame(time = pred_no_ra$x, outcome = pred_no_ra$y, diagnosis = "No RA")
   
   # Generate the plot
   p <- ggplot() +

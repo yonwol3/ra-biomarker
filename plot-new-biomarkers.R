@@ -11,7 +11,7 @@ library(ggpubr)
 #--------------------------------#
 
 source("clean-data-new.R")
-dat_2$diagnosis <- factor(dat_2$diagnosis, levels = c("Control", "Case"), labels = c("no_RA", "RA"))
+dat_2$diagnosis <- factor(dat_2$diagnosis, levels = c("Control", "Case"), labels = c("No RA", "RA"))
 biomarkers<-c("aptivaccp3igg_≥5#00flu", "aptiva_acpafsiggvimentin2_≥5#00au",
               "aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
               "aptivaccp3iga_≥5#00flu", "aptiva_acpafsigavimentin2_≥5#00au",
@@ -25,7 +25,7 @@ outcome_colors <- brewer.pal(12, "Paired")
 names(outcome_colors) <- biomarkers
 
 # Define colors for 'RA' and 'no_RA'
-group_colors <- c("RA" = "dodgerblue4", "no_RA" = "grey")  # Blue for RA, gray for no_RA
+group_colors <- c("RA" = "dodgerblue4", "No RA" = "grey")  # Blue for RA, gray for no_RA
 
 # Transparency for scatter points
 point_alpha <- 0.5
@@ -50,7 +50,7 @@ for (i in seq_along(biomarkers)) {
   spline_ra <- smooth.spline(df_ra$t_yrs, df_ra$outcome, df = 4)
   
   # Fit smooth.spline for 'no_RA'
-  df_no_ra <- df_plot[df_plot$diagnosis == "no_RA", ]
+  df_no_ra <- df_plot[df_plot$diagnosis == "No RA", ]
   spline_no_ra <- smooth.spline(df_no_ra$t_yrs, df_no_ra$outcome, df = 4)
   
   # Create a sequence of time points for smooth curves
@@ -62,7 +62,7 @@ for (i in seq_along(biomarkers)) {
   
   # Create data frames for the fitted spline lines
   df_spline_ra <- data.frame(time = pred_ra$x, outcome = pred_ra$y, diagnosis = "RA")
-  df_spline_no_ra <- data.frame(time = pred_no_ra$x, outcome = pred_no_ra$y, diagnosis = "no_RA")
+  df_spline_no_ra <- data.frame(time = pred_no_ra$x, outcome = pred_no_ra$y, diagnosis = "No RA")
   
   # Generate the plot
   p <- ggplot() +
