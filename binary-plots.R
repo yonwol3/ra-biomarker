@@ -9,46 +9,26 @@ library(RColorBrewer)
 library(gridExtra)
 library(ggpubr)
 library(kableExtra)
-
-
-hpd <- function(x, alpha = 0.05){
-  
-  # x is the vector of bootstrap estimates
-  n = length(x)
-  m = round(n * alpha)
-  x = sort(x)
-  y = x[(n - m + 1):n] - x[1:m]
-  z = min(y)
-  k = which(y == z)[1]
-  c(x[k], x[n - m + k])
-  
-}
-
+source("~/Github/ra-biomarker/hpd.R")
 
 #--------------------------------------#
 # Original dichotomus biomarkers 
 #--------------------------------------#
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_bin.RData"
-temp_file <- tempfile(fileext = ".RData")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-mcmc_bin<- get(load(temp_file)[1])
-mcmc<-mcmc_bin
-kappa<-mcmc[ ,7:12] 
-gamma<-mcmc[ , 1:6]
 
-biomarkers<-c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
+setwd("~/Documents/RA-Biomarker/")
+load("mcmc/mcmc_bin_A.RData")
+
+kappa <- mcmc[ ,7:12] 
+gamma <- mcmc[ ,1:6]
+
+biomarkers <- c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
 biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
 
 ### changepoint density plots####
 outcome_colors <- brewer.pal(6, "Set1")
 outcome_colors[6] <- "#F781BF"
 
-png("figures/bin_change-point-dens-originalbiomarkers.png", 
+png("figures/bin_change-point-dens_A.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
@@ -76,24 +56,20 @@ legend("topleft",
 
 dev.off()
 
-
-
-###
 ### Table showing kappa, gamma, and the statistic (gamma + kappa)
-###
 
 kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
+
 for (i in 1:ncol(kappa)) {
-  kappa_b<-kappa[, i]
-  mean<-round(mean(kappa_b),2)
-  q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
-  q_97<-round(hpd(kappa_b)[2], 2) 
-  kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-  kappa_summ[i, 1]<-biomarker_labels[i]
+  kappa_b <- kappa[, i]
+  mean <- round(mean(kappa_b),2)
+  q_2 <- round(hpd(kappa_b)[1], 2) # 2.5th quantile
+  q_97 <- round(hpd(kappa_b)[2], 2) 
+  kappa_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
+  kappa_summ[i, 1] <- biomarker_labels[i]
 }
 
-colnames(kappa_summ)<- c("biomarker","kappa mean[95% HPD CrI]")
-
+colnames(kappa_summ) <- c("biomarker","kappa mean[95% HPD CrI]")
 
 k <- 6
 time_grid <- seq(-20, 10, by = 0.01)
@@ -111,11 +87,11 @@ res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
              dimnames = list(
                biomarker = biomarker_labels,
                time = time_labels,
-               iteration = iteration_labels
-             ))
+               iteration = iteration_labels))
 
 # Loop over biomarkers, time grid, and iterations to fill the array.
 for (b in 1:k) {
+  
   gamma_b <- gamma[, b]     # gamma values for biomarker b
   kappa_b <- kappa[, b]     # kappa values for biomarker b
   
@@ -125,6 +101,7 @@ for (b in 1:k) {
       res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
     }
   }
+  
 }
 
 # Convert the array to a data frame.
@@ -147,40 +124,31 @@ closest_threshold <- result_df %>%
   dplyr::ungroup()%>% 
   arrange(time)
 
+gamma_summ<-matrix(NA, ncol = 2, nrow = length(biomarker_labels))
 
-gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
-for ( i in 1:length(biomarker_labels)) {
-  gamma_b<-gamma[, i]
-  mean<-round(mean(gamma_b),2)
-  q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
-  q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-  gamma_summ[i, 1]<-biomarker_labels[i]
+for (i in 1:length(biomarker_labels)) {
+  gamma_b <- gamma[, i]
+  mean <- round(mean(gamma_b),2)
+  q_2 <- round(hpd(gamma_b)[1], 2) # 2.5th quantile
+  q_97 <- round(hpd(gamma_b)[2], 2) # 97.5th quantile
+  gamma_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
+  gamma_summ[i, 1] <- biomarker_labels[i]
 }
+
 gamma_summ<- as.data.frame(gamma_summ)
 colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../bin_original_summary.csv")
-
-
+write.csv(closest_threshold,"../../bin_summary_A.csv")
 
 #--------------------------------------#
 # Bin New biomarkers 
 #--------------------------------------#
-onedrive<- get_business_onedrive()
-file_path <- "Attachments/mcmc_new_bin.RData"
-temp_file <- tempfile(fileext = ".RData")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-mcmc_cens_new<- get(load(temp_file)[1])
-mcmc_new<-mcmc_new_bin
 
-kappa <- mcmc_new[, 9:16]
-gamma <- mcmc_new[, 1:8]
+load("mcmc/mcmc_bin_B.RData")
+
+kappa <- mcmc_new[,9:16]
+gamma <- mcmc_new[,1:8]
 
 # Define labels for each dimension
 biomarkers<-c("anti-CCP3 (IgG)","anti-citVim2 (IgG)", "anti-citFib (IgG)","anti-citHis1 (IgG)",
@@ -190,11 +158,9 @@ biomarker_labels <- biomarkers
 outcome_colors <- brewer.pal(8, "Paired")
 names(outcome_colors) <- biomarkers
 
-
 ### changepoint density plots####
 
-
-png("figures/bin_new_change-point-dens.png", 
+png("figures/bin_change-point-dens_B.png", 
     width = 1000, 
     height = 1000,
     res = 100, 
@@ -222,8 +188,6 @@ legend("topleft",
 
 dev.off()
 
-
-
 ### Table showing kappa, gamma, and the statistic (gamma + kappa)
 
 kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
@@ -238,8 +202,6 @@ for (i in 1:ncol(kappa)) {
 
 colnames(kappa_summ)<- c("biomarker","kappa mean[95% HPD CrI]")
 
-
-
 k <- 8
 time_grid <- seq(-20, 10, by = 0.01)
 time_labels <- as.character(time_grid)
@@ -251,11 +213,11 @@ res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
              dimnames = list(
                biomarker = biomarker_labels,
                time = time_labels,
-               iteration = iteration_labels
-             ))
+               iteration = iteration_labels))
 
 # Loop over biomarkers, time grid, and iterations to fill the array.
 for (b in 1:k) {
+  
   gamma_b <- gamma[, b]     # gamma values for biomarker b
   kappa_b <- kappa[, b]     # kappa values for biomarker b
   
@@ -265,6 +227,7 @@ for (b in 1:k) {
       res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
     }
   }
+  
 }
 
 # Convert the array to a data frame.
@@ -280,7 +243,6 @@ result_df <- result_df %>%
   arrange(desc(prop_positive))
 
 # select time where absolute difference between prop_positive and 0.9 is minimized
-
 closest_threshold <- result_df %>% 
   dplyr::group_by(biomarker) %>% 
   dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
@@ -288,16 +250,18 @@ closest_threshold <- result_df %>%
   arrange(time)
 
 gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
-for ( i in 1:length(biomarker_labels)) {
-  gamma_b<-gamma[, i]
-  mean<-round(mean(gamma_b),2)
-  q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
-  q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-  gamma_summ[i, 1]<-biomarker_labels[i]
+
+for (i in 1:length(biomarker_labels)) {
+  gamma_b <- gamma[, i]
+  mean <- round(mean(gamma_b),2)
+  q_2 <- round(hpd(gamma_b)[1], 2) # 2.5th quantile
+  q_97 <- round(hpd(gamma_b)[2], 2) # 97.5th quantile
+  gamma_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
+  gamma_summ[i, 1] <- biomarker_labels[i]
 }
-gamma_summ<- as.data.frame(gamma_summ)
-colnames(gamma_summ)<- c("biomarker","gamma mean[95% HPD CrI]")
-closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
-closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../bin_new_summary.csv")
+
+gamma_summ <- as.data.frame(gamma_summ)
+colnames(gamma_summ) <- c("biomarker","gamma mean[95% HPD CrI]")
+closest_threshold <- left_join(closest_threshold,kappa_summ, by="biomarker") 
+closest_threshold <- left_join(closest_threshold, gamma_summ, by="biomarker")
+write.csv(closest_threshold,"../../bin_summary_B.csv")

@@ -4,40 +4,15 @@
 ## BY:      Kevin Josey                    ##
 #############################################
 
-library(Microsoft365R)
 require(tidyverse)
 require(plyr)
 library(readxl)
 
 ## Data Cleaning
 
-onedrive <- get_business_onedrive()
-file_path <- "Attachments/forKevin.txt "
-# file_path("~/Documents/RA-Biomarker/")
-temp_file <- tempfile(fileext = ".txt")
-onedrive$download_file(
-  src = file_path,
-  dest = temp_file,
-  overwrite = TRUE
-)
-raDat <- read.delim(temp_file, stringsAsFactors = FALSE)
+setwd("~/Documents/RA-Biomarker/")
+raDat <- read.delim("~/Documents/RA-Biomarker/data/forKevin.txt", stringsAsFactors = FALSE)
 names(raDat) <- tolower(names(raDat))
-unlink(temp_file)
-
-# onedrive <- get_business_onedrive()
-# file_path <- "Attachments/DOD_AddRace.xls"
-# temp_file <- tempfile(fileext = ".xls")
-# onedrive$download_file(
-#   src = file_path,
-#   dest = temp_file,
-#   overwrite = TRUE
-# )
-# race_clean <- read_xls(temp_file, sheet=2)
-# unlink(temp_file)
-
-# setwd("~/Documents/RA-Biomarker/")
-# raDat <- read.delim("~/Documents/RA-Biomarker/data/forKevin.txt", stringsAsFactors = FALSE)
-# names(raDat) <- tolower(names(raDat))
 
 # raDat$race_ethnic<-race_clean$RACE_ETHNIC # the correct race/ethnicity values
 raDat_case <- subset(raDat, diagnosis == "RA")
@@ -93,20 +68,20 @@ L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
 U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 D <- apply(Y, 2, function(z) as.numeric(z == max(z)))
 
-clean <- data.frame(time, age_diag, fem, white, black, hisp, famhx, subj_id, study_id, diagnosis, Y)
+data_A <- data.frame(time, age_diag, fem, white, black, hisp, famhx, subj_id, study_id, diagnosis, Y)
 
 ## Add Dichotomous variables
 
-clean$bin_igarfconc_ <- ifelse(clean$igarfconc_ > 8.59151, 1, 0)
-clean$bin_igmrfconc_ <- ifelse(clean$igmrfconc_ > 26.59495, 1, 0)
-clean$bin_iggrfconc_ <- ifelse(clean$iggrfconc_ > 15.79870, 1, 0)
-clean$bin_igaccpavgconc <- ifelse (clean$igaccpavgconc > 110.07650, 1, 0)
-clean$bin_igmccpavgconc <- ifelse (clean$igmccpavgconc > 202.07565, 1, 0)
-clean$bin_iggccpavgconc <- ifelse (clean$iggccpavgconc > 7.66189, 1, 0)
+data_A$bin_igarfconc_ <- ifelse(data_A$igarfconc_ > 8.59151, 1, 0)
+data_A$bin_igmrfconc_ <- ifelse(data_A$igmrfconc_ > 26.59495, 1, 0)
+data_A$bin_iggrfconc_ <- ifelse(data_A$iggrfconc_ > 15.79870, 1, 0)
+data_A$bin_igaccpavgconc <- ifelse (data_A$igaccpavgconc > 110.07650, 1, 0)
+data_A$bin_igmccpavgconc <- ifelse (data_A$igmccpavgconc > 202.07565, 1, 0)
+data_A$bin_iggccpavgconc <- ifelse (data_A$iggccpavgconc > 7.66189, 1, 0)
 
-# clean_sens<- clean %>% filter(time<=0)
+# data_A_sens <- data_A %>% filter(time<=0)
 
-Y_bin <- clean %>% 
+Y_bin <- data_A %>% 
   select(bin_igarfconc_, bin_igmrfconc_, bin_iggrfconc_, 
          bin_igaccpavgconc, bin_igmccpavgconc, bin_iggccpavgconc) 
 

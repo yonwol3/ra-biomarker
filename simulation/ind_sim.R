@@ -9,8 +9,6 @@ library(rstan)
 # timeij ~ unif (a,b)
 # We have 20 subject IDs and 1:1 ratio for treatment allocation
 
-
-
 # Parameters
 sigma_b <- 1  # Standard deviation for random intercepts
 sigma_e <- 2  # Standard deviation for error terms
@@ -28,11 +26,7 @@ true_beta3 <- 0.3
 true_kappa <- -8
 n_sim <- 1000
 
-
-
 set.seed(123)  # For reproducibility
-
-
 
 # Create empty data frames to store results
 results <- data.frame(

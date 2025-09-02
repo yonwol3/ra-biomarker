@@ -5,8 +5,6 @@
 #############################################
 
 # Libraries
-
-
 library(tidyverse)
 library(labelled)
 library(table1)
@@ -14,70 +12,65 @@ library(naniar)
 library(mcmcse)
 library(gt)
 library(kableExtra)
+source("~/Github/ra-biomarker/hpd.R")
 
 ## Table 1
 
 # Load the dataframes
-source("clean-data.R")
-source("clean-data-new.R")
+setwd("~/Documents/RA-Biomarker/")
+source("~/Github/ra-biomarker/clean-data-A.R")
+source("~/Github/ra-biomarker/clean-data-B.R")
 
 preserve_factor <- function(x) {
-                      lab <- attr(x, "label")
-                      fx <- factor(x)
-                      attr(fx, "label") <- lab
-                      fx
-                    }
-
+  lab <- attr(x, "label")
+  fx <- factor(x)
+  attr(fx, "label") <- lab
+  fx
+}
 
 # Add age at diagnosis values to each dataset
-clean$agediag <- raDat$age - raDat$t_yrs # adding age at diagnosis from raDat
-dat_2$agediag <- dat_2$age - dat_2$t_yrs  # age at diagnosis in new dataset
+data_A$agediag <- raDat$age - raDat$t_yrs # adding age at diagnosis from raDat
+data_B$agediag <- data_B$age - data_B$t_yrs  # age at diagnosis in new dataset
 
-# Rename covariate elements for the 'clean' dataset
-clean$fem <- factor(clean$fem, labels = c("Male", "Female"))
-clean$nw <- factor(clean$white, labels = c("Non-white","White"))
-clean$famhx<-raDat$familyhxra 
-clean$eversmoke <- raDat$eversmoke  # smoking status from raDat
-clean$diagnosis <- factor(clean$diagnosis, labels = c("No RA", "RA"))
-clean <- clean %>%
+# Rename covariate elements for the 'data_A' dataset
+data_A$fem <- factor(data_A$fem, labels = c("Male", "Female"))
+data_A$nw <- factor(data_A$white, labels = c("Non-white","White"))
+data_A$famhx<-raDat$familyhxra 
+data_A$eversmoke <- raDat$eversmoke  # smoking status from raDat
+data_A$diagnosis <- factor(data_A$diagnosis, labels = c("No RA", "RA"))
+data_A <- data_A %>%
   dplyr::mutate(
     famhx_c = dplyr::case_when(
       famhx == "Yes" ~ "Yes",
       famhx == "No" ~ "No",
-      T ~ "Not available"
-    ),
+      T ~ "Not available"),
     smoking = dplyr::case_when(
       eversmoke == "No" ~ "No",
       eversmoke == "Yes" ~ "Yes",
-      TRUE ~ "Not available"
-    )
-  )
+      TRUE ~ "Not available"))
 
-# Rename covariate elements for the 'dat_2' dataset
-dat_2$gender <- factor(dat_2$gender, levels = c("M", "F"), labels = c("Male", "Female"))
-dat_2$nw <- ifelse(dat_2$race_ethnic == "W", 0, 1)  # non-white indicator
-dat_2$nw <- factor(dat_2$nw, labels = c("White", "Non-white"))
-dat_2$diagnosis <- factor(dat_2$diagnosis, 
+# Rename covariate elements for the 'data_B' dataset
+data_B$gender <- factor(data_B$gender, levels = c("M", "F"), labels = c("Male", "Female"))
+data_B$nw <- ifelse(data_B$race_ethnic == "W", 0, 1)  # non-white indicator
+data_B$nw <- factor(data_B$nw, labels = c("White", "Non-white"))
+data_B$diagnosis <- factor(data_B$diagnosis, 
                           levels = c("Control", "Case"), 
                           labels = c("No RA", "RA"))
-dat_2$subj_id<-subj_id
-dat_2$study_id<-study_id
-dat_2 <- dat_2 %>%
+data_B$subj_id<-subj_id
+data_B$study_id<-study_id
+data_B <- data_B %>%
   dplyr::mutate(
     famhx_c = dplyr::case_when(
       familyhxra == "No" ~ "No",
       familyhxra == "Yes" ~ "Yes",
-      TRUE ~ "Not available"
-    ),
+      TRUE ~ "Not available"),
     smoking = dplyr::case_when(
       eversmoke == "No" ~ "No",
       eversmoke == "Yes" ~ "Yes",
-      TRUE ~ "Not available"
-    )
-  )
+      TRUE ~ "Not available"))
 
 # Compute mean biomarker values per subject to create Table 1
-clean_tb1 <- clean %>% 
+data_A_tb1 <- data_A %>% 
   dplyr::group_by(subj_id) %>%
   dplyr::summarise(
     gender = dplyr::first(fem),
@@ -89,7 +82,7 @@ clean_tb1 <- clean %>%
     dplyr::across(starts_with("ig"), ~ mean(.x, na.rm = TRUE), .names = "mean_{col}")
   )
 
-dat_2_tb1 <- dat_2 %>% 
+data_B_tb1 <- data_B %>% 
   dplyr::group_by(subj_id) %>%
   dplyr::summarise(
     gender = dplyr::first(gender),
@@ -102,7 +95,7 @@ dat_2_tb1 <- dat_2 %>%
   )
 
 # Specify variable labels for the final Table 1 output
-clean_tb1 <- set_variable_labels(clean_tb1,
+data_A_tb1 <- set_variable_labels(data_A_tb1,
                                  gender = "Sex",
                                  race = "Race",
                                  famhx_c = "Family RA History",
@@ -115,11 +108,7 @@ clean_tb1 <- set_variable_labels(clean_tb1,
                                  mean_igmccpavgconc = "ACPA IgM",
                                  mean_iggccpavgconc = "ACPA IgG")
 
-
-
-
-
-dat_2_tb1 <- set_variable_labels(dat_2_tb1,
+data_B_tb1 <- set_variable_labels(data_B_tb1,
                                  gender = "Sex",
                                  race = "Race",
                                  famhx_c = "Family RA History",
@@ -148,12 +137,12 @@ dat_2_tb1 <- set_variable_labels(dat_2_tb1,
 # table-1 BOTH cohorts
 #
 #---------------------#
-# Set variable labels for dat_2_tb1
+# Set variable labels for data_B_tb1
 
 # Create Table 1 datasets by removing the subject ID column and renaming 'diagnosis' as 'group'
-df1 <- clean_tb1[, -1] %>% 
+df1 <- data_A_tb1[, -1] %>% 
   dplyr::rename(group = diagnosis)
-df2 <- dat_2_tb1[, -1] %>% 
+df2 <- data_B_tb1[, -1] %>% 
   dplyr::rename(group = diagnosis)
 
 
@@ -314,11 +303,6 @@ final_gt_table <- combined_table %>%
   gt::opt_table_lines(extent = "all") %>%
   gt::cols_align("center")
 
-
-
-
-
-
 # --- Generate the final table using kable and kableExtra ---
 var_labels<-unique(combined_table$var)
 table1_obj <- combined_table %>%
@@ -345,249 +329,6 @@ for (i in 1:length(var_labels)) {
     table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = i + 6, end_row = i + 6)
   }
 }
+
 saveRDS(combined_table, file = "../../table1_obj_df.rds")
 saveRDS(table1_obj, file = "../../table1_obj.rds")
-
-
-
-
-
-
-#------------------------------------------------#
-#
-# change-point+ magnitude(90% prob being >0)
-# Original Biomarkers
-#
-#------------------------------------------------#
-
-# function to find highest posterior density interval
-
-# hpd <- function(x, alpha = 0.05){
-#   
-#   # x is the vector of bootstrap estimates
-#   n = length(x)
-#   m = round(n * alpha)
-#   x = sort(x)
-#   y = x[(n - m + 1):n] - x[1:m]
-#   z = min(y)
-#   k = which(y == z)[1]
-#   c(x[k], x[n - m + k])
-#   
-# }
-# 
-# 
-# onedrive<- get_business_onedrive()
-# file_path <- "Attachments/mcmc_trunc.RData"
-# temp_file <- tempfile(fileext = ".RData")
-# onedrive$download_file(
-#   src = file_path,
-#   dest = temp_file,
-#   overwrite = TRUE
-# )
-# mcmc_trunc<- get(load(temp_file)[1])
-# mcmc<-mcmc_trunc[[1]]
-# 
-# # Number of biomarkers being analyzed
-# k <- 6
-# 
-# # Define the time grid
-# time_grid <- seq(-20, 10, by = 0.01)
-# 
-# # Extract kappa and gamma from the mcmc data
-# kappa <- mcmc[, 7:12]
-# gamma <- mcmc[, 1:6]
-# 
-# biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
-# time_labels <- as.character(time_grid)
-# iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
-# 
-# # Create a 3-dimensional array with named dimensions:
-# # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-# res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
-#              dimnames = list(
-#                biomarker = biomarker_labels,
-#                time = time_labels,
-#                iteration = iteration_labels
-#              ))
-# 
-# # Loop over biomarkers, time grid, and iterations to fill the array.
-# for (b in 1:k) {
-#   gamma_b <- gamma[, b]     # gamma values for biomarker b
-#   kappa_b <- kappa[, b]     # kappa values for biomarker b
-#   
-#   for (i in seq_along(time_grid)) {
-#     t <- time_grid[i]
-#     for (j in 1:nrow(kappa)) {
-#       res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
-#     }
-#   }
-# }
-# 
-# # Convert the array to a data frame.
-# result_df <- as.data.frame.table(res, responseName = "value")
-# colnames(result_df) <- c("biomarker", "time", "iteration", "value")
-# 
-# result_df$time <-as.numeric(as.character(result_df$time))
-# 
-# # Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
-# result_df <- result_df %>% 
-#   dplyr::group_by(biomarker, time) %>% 
-#   dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
-#   arrange(desc(prop_positive))
-# 
-# # select time where absolute difference between prop_positive and 0.9 is minimized
-# 
-# closest_threshold <- result_df %>% 
-#   dplyr::group_by(biomarker) %>% 
-#   dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
-#   dplyr::ungroup()%>% 
-#   arrange(time)
-# 
-# 
-# # Gamma only (mean (95% HPDI))
-# 
-# gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
-# for ( i in 1:length(biomarker_labels)) {
-#   gamma_b<-gamma[, i]
-#   mean<-round(mean(gamma_b),2)
-#   q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
-#   q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
-#   gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-#   gamma_summ[i, 1]<-biomarker_labels[i]
-# }
-# gamma_summ<- as.data.frame(gamma_summ)
-# colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
-# 
-# # kappa only (mean (95% HPDI))
-# kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
-# for (i in 1:ncol(kappa)) {
-#   kappa_b<-kappa[, i]
-#   mean<-round(mean(kappa_b),2)
-#   q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
-#   q_97<-round(hpd(kappa_b)[2], 2) 
-#   kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-#   kappa_summ[i, 1]<-biomarker_labels[i]
-# }
-# 
-# colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
-# 
-# closest_threshold<-left_join(closest_threshold,kappa_summ, by="biomarker") 
-# closest_threshold<-left_join(closest_threshold, gamma_summ, by="biomarker")
-# write.csv(closest_threshold,"../../original_prob_ci.csv")
-# 
-# #------------------------------------------------#
-# #
-# # change-point+ magnitude(90% prob being >0)
-# # New Biomarkers
-# #
-# #------------------------------------------------#
-# 
-# onedrive<- get_business_onedrive()
-# file_path <- "Attachments/mcmc_new_trunc.RData"
-# temp_file <- tempfile(fileext = ".RData")
-# onedrive$download_file(
-#   src = file_path,
-#   dest = temp_file,
-#   overwrite = TRUE
-# )
-# mcmc_trunc_new<- get(load(temp_file)[1])
-# mcmc_new<-mcmc_trunc_new[[1]]
-# 
-# # Number of biomarkers being analyzed
-# k <- 12
-# 
-# # Define the time grid
-# time_grid <- seq(-20, 10, by = 0.01)
-# 
-# # Extract kappa and gamma from the mcmc data
-# kappa <- mcmc_new[, 13:24]
-# gamma <- mcmc_new[, 1:12]
-# 
-# # Define labels for each dimension
-# biomarkers<-c("aptivaccp3iga","aptivaccp3igg",
-#               "aptivapad1igg_≥5#00au","aptivapad4igg_≥5#00au",
-#               "aptiva_acpafsiggvimentin2_≥5#00au","aptiva_acpafsiggfibrinogen_≥5#00au","aptiva_acpafsigghistone1_≥5#00au",
-#               "aptivapad1iga_≥5#00au","aptivapad4iga_≥5#00au",
-#               "aptiva_acpafsigavimentin2_≥5#00au","aptiva_acpafsigafibrinogen_≥5#00au","aptiva_acpafsigahistone1_≥5#00au")
-# biomarkers <- sub("^aptiva", "", biomarkers)
-# biomarkers<- sub("_≥5#00au", "", biomarkers)
-# biomarkers<-sub("_","",biomarkers)
-# biomarker_labels <- biomarkers
-# 
-# time_labels <- as.character(time_grid)
-# iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
-# 
-# # Create a 3-dimensional array with named dimensions:
-# # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-# res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
-#              dimnames = list(
-#                biomarker = biomarker_labels,
-#                time = time_labels,
-#                iteration = iteration_labels
-#              ))
-# 
-# # Loop over biomarkers, time grid, and iterations to fill the array.
-# for (b in 1:k) {
-#   gamma_b <- gamma[, b]     # gamma values for biomarker b
-#   kappa_b <- kappa[, b]     # kappa values for biomarker b
-#   
-#   for (i in seq_along(time_grid)) {
-#     t <- time_grid[i]
-#     for (j in 1:nrow(kappa)) {
-#       res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
-#     }
-#   }
-# }
-# 
-# # Convert the array to a data frame.
-# result_df_new<- as.data.frame.table(res, responseName = "value")
-# colnames(result_df_new) <- c("biomarker", "time", "iteration", "value")
-# 
-# result_df_new$time <-as.numeric(as.character(result_df_new$time))
-# 
-# # Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
-# result_df_new <- result_df_new %>% 
-#   dplyr::group_by(biomarker, time) %>% 
-#   dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
-#   arrange(desc(prop_positive))
-# 
-# # select time where absolute difference between prop_positive and 0.9 is minimized
-# 
-# closest_threshold_new<- result_df_new %>% 
-#   dplyr::group_by(biomarker) %>% 
-#   dplyr::slice(which.min(abs(prop_positive - 0.9))) %>% 
-#   dplyr::ungroup()%>% 
-#   arrange(time)
-# 
-# # Gamma only (mean (95% HPDI))
-# 
-# gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
-# for ( i in 1:length(biomarker_labels)) {
-#   gamma_b<-gamma[, i]
-#   mean<-round(mean(gamma_b),2)
-#   q_2<- round(hpd(gamma_b)[1], 2) # 2.5th quantile
-#   q_97<-round(hpd(gamma_b)[2], 2) # 97.5th quantile
-#   gamma_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-#   gamma_summ[i, 1]<-biomarker_labels[i]
-# }
-# gamma_summ<- as.data.frame(gamma_summ)
-# colnames(gamma_summ)<- c("biomarker","gamma mean[95% CI]")
-# 
-# # kappa only (mean (95% HPDI))
-# kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
-# for (i in 1:ncol(kappa)) {
-#   kappa_b<-kappa[, i]
-#   mean<-round(mean(kappa_b),2)
-#   q_2<- round(hpd(kappa_b)[1], 2) # 2.5th quantile
-#   q_97<-round(hpd(kappa_b)[2], 2) 
-#   kappa_summ[i, 2]<-paste(mean, "[",q_2,"-",q_97,"]")
-#   kappa_summ[i, 1]<-biomarker_labels[i]
-# }
-# 
-# colnames(kappa_summ)<- c("biomarker","kappa mean[95% CI]")
-# 
-# closest_threshold_new<-left_join(closest_threshold_new,kappa_summ, by="biomarker") 
-# closest_threshold_new<-left_join(closest_threshold_new, gamma_summ, by="biomarker")
-# write.csv(closest_threshold_new,"../../new_prob_ci.csv")
-
-

@@ -80,7 +80,7 @@ stan_fit <- stan(
   warmup = 2000
 )
 
-pars=c(paste0("gamma","[",1:k,"]"),paste0("kappa","[",1:k,"]")) # specific parameters for our research question
+pars = c(paste0("gamma","[",1:k,"]"),paste0("kappa","[",1:k,"]")) # specific parameters for our research question
 
 summary_stanfit<-summary(stan_fit, pars=pars)$summary
 summary_stanfit
