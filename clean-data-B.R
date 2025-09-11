@@ -63,7 +63,8 @@ bage.tmp <- data_B %>%
   group_by(subj_id) %>% 
   filter(row_number() == 1) %>%
   mutate(bage = round(age - t_yrs)) %>%
-  select(bage)
+  select(bage) %>%
+  ungroup()
 age_diag <- merge(data_B, bage.tmp, by = "subj_id")$bage
 diagnosis <- ifelse(data_B$diagnosis == "Case", 1, 0)
 
