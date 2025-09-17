@@ -16,10 +16,12 @@ source("~/Github/ra-biomarker/hpd.R")
 
 setwd("~/Documents/RA-Biomarker/")
 temp_file <- "mcmc/mcmc_trunc_A.RData"
+time_grid <- seq(-20, 10, by = 0.01)
+K <- 6
 
 mcmc <- load(temp_file)
-kappa <- mcmc[ ,7:12]
-gamma <- mcmc[ ,1:6]
+kappa <- mcmc_trunc_A[ ,7:12]
+gamma <- mcmc_trunc_A[ ,1:6]
 
 biomarkers <- c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
 biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
@@ -61,20 +63,15 @@ dev.off()
 kappa_summ <- data.frame(biomarker = character(0), kappa_summ = numeric(0)) 
 
 for (i in 1:ncol(kappa)) {
-  kappa_b <- kappa[, i]
-  mean <- round(mean(kappa_b),2)
-  q_2 <- round(hpd(kappa_b)[1], 2) # 2.5th quantile
-  q_97 <-round(hpd(kappa_b)[2], 2) 
+  kappa_tmp <- kappa[, i]
+  mean <- round(mean(kappa_tmp),2)
+  q_2 <- round(hpd(kappa_tmp)[1], 2) # 2.5th quantile
+  q_97 <-round(hpd(kappa_tmp)[2], 2) 
   kappa_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
   kappa_summ[i, 1] <- biomarker_labels[i]
 }
 
 colnames(kappa_summ) <- c("biomarker", "kappa mean[95% HPD CrI]")
-
-k <- 6
-time_grid <- seq(-20, 10, by = 0.01)
-kappa <- mcmc[, 7:12]
-gamma <- mcmc[, 1:6]
 
 # Define labels for each dimension
 
@@ -83,24 +80,29 @@ iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
 
 # Create a 3-dimensional array with named dimensions:
 # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
+res <- array(NA, dim = c(K, length(time_grid), nrow(kappa)),
              dimnames = list(
                biomarker = biomarker_labels,
                time = time_labels,
-               iteration = iteration_labels))
+               iteration = iteration_labels)
+             )
 
 # Loop over biomarkers, time grid, and iterations to fill the array.
-for (b in 1:k) {
-  gamma_b <- gamma[, b]     # gamma values for biomarker b
-  kappa_b <- kappa[, b]     # kappa values for biomarker b
+for (b in 1:K) {
+  
+  gamma_tmp <- gamma[, b]     # gamma values for biomarker b
+  kappa_tmp <- kappa[, b]     # kappa values for biomarker b
   
   for (i in seq_along(time_grid)) {
-    t <- time_grid[i]
-    for (j in 1:nrow(kappa)) {
-      res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
-    }
     
+    t <- time_grid[i]
+    
+    for (j in 1:nrow(kappa)) {
+      res[b, i, j] <- (t - kappa_tmp[j]) * gamma_tmp[j]
+    }
+  
   }
+  
 }
 
 # Convert the array to a data frame.
@@ -145,8 +147,8 @@ write.csv(closest_threshold,"../../truncated_summary_A.csv")
 
 load("mcmc/mcmc_trunc_B.RData")
 
-kappa <- mcmc_B[, 9:16]
-gamma <- mcmc_B[, 1:8]
+kappa <- mcmc_trunc_B[, 9:16]
+gamma <- mcmc_trunc_B[, 1:8]
 
 # Define labels for each dimension
 biomarkers<-c("anti-CCP3 (IgG)","anti-citVim2 (IgG)", "anti-citFib (IgG)","anti-citHis1 (IgG)",
@@ -188,42 +190,47 @@ dev.off()
 
 ### Table showing kappa, gamma, and the statistic (gamma + kappa)
 
-kappa_summ <- data.frame(biomarker=character(0),kappa_summ=numeric(0))
+kappa_summ <- data.frame(biomarker = character(0),kappa_summ = numeric(0))
+
 for (i in 1:ncol(kappa)) {
-  kappa_b <- kappa[, i]
-  mean <- round(mean(kappa_b),2)
-  q_2 <- round(hpd(kappa_b)[1], 2) # 2.5th quantile
-  q_97 <- round(hpd(kappa_b)[2], 2) 
+  kappa_tmp <- kappa[, i]
+  mean <- round(mean(kappa_tmp),2)
+  q_2 <- round(hpd(kappa_tmp)[1], 2) # 2.5th quantile
+  q_97 <- round(hpd(kappa_tmp)[2], 2) 
   kappa_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
   kappa_summ[i, 1] <- biomarker_labels[i]
 }
 
 colnames(kappa_summ) <- c("biomarker","kappa mean[95% HPD CrI]")
 
-k <- 8
+K <- 8
 time_grid <- seq(-20, 10, by = 0.01)
 time_labels <- as.character(time_grid)
 iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
 
 # Create a 3-dimensional array with named dimensions:
 # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-res <- array(NA, dim = c(k, length(time_grid), nrow(kappa)),
+res <- array(NA, dim = c(K, length(time_grid), nrow(kappa)),
              dimnames = list(
                biomarker = biomarker_labels,
                time = time_labels,
-               iteration = iteration_labels))
+               iteration = iteration_labels)
+             )
 
 # Loop over biomarkers, time grid, and iterations to fill the array.
-for (b in 1:k) {
+for (b in 1:K) {
   
-  gamma_b <- gamma[, b]     # gamma values for biomarker b
-  kappa_b <- kappa[, b]     # kappa values for biomarker b
+  gamma_tmp <- gamma[, b]     # gamma values for biomarker b
+  kappa_tmp <- kappa[, b]     # kappa values for biomarker b
   
   for (i in seq_along(time_grid)) {
+    
     t <- time_grid[i]
+    
     for (j in 1:nrow(kappa)) {
-      res[b, i, j] <- (t - kappa_b[j]) * gamma_b[j]
+      res[b, i, j] <- (t - kappa_tmp[j]) * gamma_tmp[j]
     }
+    
   }
   
 }
@@ -248,12 +255,13 @@ closest_threshold <- result_df %>%
   dplyr::ungroup()%>% 
   arrange(time)
 
-gamma_summ<-matrix(NA,ncol = 2, nrow=length(biomarker_labels))
+gamma_summ <- matrix(NA, ncol = 2, nrow = length(biomarker_labels))
+
 for ( i in 1:length(biomarker_labels)) {
-  gamma_b <- gamma[, i]
-  mean <- round(mean(gamma_b),2)
-  q_2 <- round(hpd(gamma_b)[1], 2) # 2.5th quantile
-  q_97 <- round(hpd(gamma_b)[2], 2) # 97.5th quantile
+  gamma_tmp <- gamma[, i]
+  mean <- round(mean(gamma_tmp),2)
+  q_2 <- round(hpd(gamma_tmp)[1], 2) # 2.5th quantile
+  q_97 <- round(hpd(gamma_tmp)[2], 2) # 97.5th quantile
   gamma_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
   gamma_summ[i, 1] <- biomarker_labels[i]
 }
@@ -286,4 +294,6 @@ grid_plot <- plot_grid(
   align      = "hv"
 )
 
+png("~/Documents/RA-Biomarker/figures/fig3.png", height = 800, width = 1000)
 print(grid_plot)
+dev.off()

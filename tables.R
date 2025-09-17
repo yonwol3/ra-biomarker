@@ -28,21 +28,23 @@ preserve_factor <- function(x) {
   fx
 }
 
-# Add age at diagnosis values to each dataset
-data_A$agediag <- raDat$age - raDat$t_yrs # adding age at diagnosis from raDat
-data_B$agediag <- data_B$age - data_B$t_yrs  # age at diagnosis in new dataset
-
 # Rename covariate elements for the 'data_A' dataset
-data_A$fem <- factor(data_A$fem, labels = c("Male", "Female"))
-data_A$nw <- factor(data_A$white, labels = c("Non-white","White"))
-data_A$famhx<-raDat$familyhxra 
-data_A$eversmoke <- raDat$eversmoke  # smoking status from raDat
-data_A$diagnosis <- factor(data_A$diagnosis, labels = c("No RA", "RA"))
+data_A$fem <- factor(data_A$gender, 
+                     levels = c("M", "F"), 
+                     labels = c("Male", "Female"))
+data_A$race_ethnic <- ifelse(data_A$race_ethnic %in% c("W", "B", "H"), data_A$race_ethnic, "O")
+data_A$race_ethnic <- factor(data_A$race_ethnic,
+                             levels = c("W", "B", "H", "O"),
+                             label = c("White", "Black", "Hispanic/Latino", "Other"))
+data_A$diagnosis <- factor(data_A$diagnosis,
+                           levels = c("Control", "RA"), 
+                           labels = c("No RA", "RA"))
+
 data_A <- data_A %>%
   dplyr::mutate(
     famhx_c = dplyr::case_when(
-      famhx == "Yes" ~ "Yes",
-      famhx == "No" ~ "No",
+      familyhxra == "Yes" ~ "Yes",
+      familyhxra == "No" ~ "No",
       T ~ "Not available"),
     smoking = dplyr::case_when(
       eversmoke == "No" ~ "No",
@@ -50,14 +52,15 @@ data_A <- data_A %>%
       TRUE ~ "Not available"))
 
 # Rename covariate elements for the 'data_B' dataset
-data_B$gender <- factor(data_B$gender, levels = c("M", "F"), labels = c("Male", "Female"))
-data_B$nw <- ifelse(data_B$race_ethnic == "W", 0, 1)  # non-white indicator
-data_B$nw <- factor(data_B$nw, labels = c("White", "Non-white"))
+data_B$fem <- factor(data_B$gender, levels = c("M", "F"), labels = c("Male", "Female"))
+data_B$race_ethnic <- ifelse(data_B$race_ethnic %in% c("W", "B", "H"), data_B$race_ethnic, "O")
+data_B$race_ethnic <- factor(data_B$race_ethnic,
+                             levels = c("W", "B", "H", "O"),
+                             label = c("White", "Black", "Hispanic/Latino", "Other"))
 data_B$diagnosis <- factor(data_B$diagnosis, 
                           levels = c("Control", "Case"), 
                           labels = c("No RA", "RA"))
-data_B$subj_id<-subj_id
-data_B$study_id<-study_id
+
 data_B <- data_B %>%
   dplyr::mutate(
     famhx_c = dplyr::case_when(
@@ -74,63 +77,54 @@ data_A_tb1 <- data_A %>%
   dplyr::group_by(subj_id) %>%
   dplyr::summarise(
     gender = dplyr::first(fem),
-    race = dplyr::first(nw),
-    famhx_c = dplyr::first(famhx_c),
+    race = dplyr::first(race_ethnic),
     diagnosis = dplyr::first(diagnosis),
+    famhx_c = dplyr::first(famhx_c),
     smoking = dplyr::first(smoking),
-    mean_agediag = mean(agediag),
+    mean_agediag = mean(age_diag),
     dplyr::across(starts_with("ig"), ~ mean(.x, na.rm = TRUE), .names = "mean_{col}")
   )
 
 data_B_tb1 <- data_B %>% 
   dplyr::group_by(subj_id) %>%
   dplyr::summarise(
-    gender = dplyr::first(gender),
-    race = dplyr::first(nw),
+    gender = dplyr::first(fem),
+    race = dplyr::first(race_ethnic),
+    diagnosis = dplyr::first(diagnosis),
     famhx_c = dplyr::first(famhx_c),
     smoking = dplyr::first(smoking),
-    diagnosis = dplyr::first(diagnosis),
-    mean_agediag = mean(agediag),
+    mean_agediag = mean(age_diag),
     dplyr::across(starts_with("apti"), ~ mean(.x, na.rm = TRUE), .names = "mean_{col}")
   )
 
 # Specify variable labels for the final Table 1 output
 data_A_tb1 <- set_variable_labels(data_A_tb1,
-                                 gender = "Sex",
-                                 race = "Race",
-                                 famhx_c = "Family RA History",
-                                 smoking = "Eversmoke", 
-                                 mean_agediag = "Age at Diagnosis",
-                                 mean_igarfconc_ = "RF IgA",
-                                 mean_igmrfconc_ = "RF IgM",
-                                 mean_iggrfconc_ = "RF IgG",
-                                 mean_igaccpavgconc = "ACPA IgA",
-                                 mean_igmccpavgconc = "ACPA IgM",
-                                 mean_iggccpavgconc = "ACPA IgG")
+                                  gender = "Sex",
+                                  race = "Race/Ethnicity",
+                                  famhx_c = "Family RA History",
+                                  smoking = "Eversmoke", 
+                                  mean_agediag = "Age at Diagnosis",
+                                  mean_igarfconc_ = "RF IgA",
+                                  mean_igmrfconc_ = "RF IgM",
+                                  mean_iggrfconc_ = "RF IgG",
+                                  mean_igaccpavgconc = "ACPA IgA",
+                                  mean_igmccpavgconc = "ACPA IgM",
+                                  mean_iggccpavgconc = "ACPA IgG")
 
 data_B_tb1 <- set_variable_labels(data_B_tb1,
                                  gender = "Sex",
-                                 race = "Race",
+                                 race = "Race/Ethnicity",
                                  famhx_c = "Family RA History",
                                  smoking = "Eversmoke", 
                                  mean_agediag = "Age at Diagnosis",
                                  `mean_aptivaccp3iga_≥5#00flu`="ccp3iga",
                                  `mean_aptivaccp3igg_≥5#00flu`="ccp3igg",
-                                 `mean_aptivapad1igg_≥5#00au`="pad1igg",             
-                                 `mean_aptivapad4igg_≥5#00au`="pad4igg",
                                  `mean_aptiva_acpafsiggvimentin2_≥5#00au`= "acpafsiggvimentin2",
                                  `mean_aptiva_acpafsiggfibrinogen_≥5#00au`="acpafsiggfibrinogen",
                                  `mean_aptiva_acpafsigghistone1_≥5#00au`= "acpafsigghistone1" ,
-                                 `mean_aptivapad1iga_≥5#00au`="pad1iga", 
-                                 `mean_aptivapad4iga_≥5#00au`="pad4iga",           
                                  `mean_aptiva_acpafsigavimentin2_≥5#00au`="acpafsigavimentin2" , 
                                  `mean_aptiva_acpafsigafibrinogen_≥5#00au`="acpafsigafibrinogen",
                                  `mean_aptiva_acpafsigahistone1_≥5#00au`="acpafsigahistone1" )
-
-
-
-
-
 
 #--------------------#
 #
@@ -145,7 +139,6 @@ df1 <- data_A_tb1[, -1] %>%
 df2 <- data_B_tb1[, -1] %>% 
   dplyr::rename(group = diagnosis)
 
-
 # Make sure group is a factor with proper labels.
 df1$group <- factor(df1$group, labels = c("Non-RA", "RA"))
 df2$group <- factor(df2$group, labels = c("Non-RA", "RA"))
@@ -158,7 +151,9 @@ get_label <- function(data, var) {
 
 # Summaries for numeric variables: Continuous variables summarized as Median (IQR)
 summarize_numeric_vars <- function(data, numeric_vars, group_var) {
+  
   out_list <- lapply(numeric_vars, function(v) {
+    
     # Calculate summary stats by group.
     stat_df <- data %>%
       dplyr::group_by(.data[[group_var]]) %>%
@@ -182,6 +177,7 @@ summarize_numeric_vars <- function(data, numeric_vars, group_var) {
     # Rename the computed value column to "val"
     names(stat_long)[names(stat_long) == "MedIQR"] <- "val"
     stat_long
+    
   })
   
   all_numeric <- dplyr::bind_rows(out_list) %>%
@@ -192,11 +188,14 @@ summarize_numeric_vars <- function(data, numeric_vars, group_var) {
     )
   
   return(all_numeric)
+  
 }
 
 # Summaries for categorical variables
 summarize_categorical_vars <- function(data, factor_vars, group_var) {
+  
   out_list <- lapply(factor_vars, function(v) {
+    
     dcat <- data %>%
       dplyr::group_by(.data[[group_var]], .data[[v]]) %>%
       dplyr::tally() %>%
@@ -222,14 +221,17 @@ summarize_categorical_vars <- function(data, factor_vars, group_var) {
       )
     
     dcat_wide
+    
   })
   
   all_cats <- dplyr::bind_rows(out_list)
   return(all_cats)
+  
 }
 
 # One-sample summarizer: generates the summary table for one dataset.
 make_summary_one_sample <- function(data, group_var = "group") {
+  
   numeric_vars <- names(data)[sapply(data, is.numeric)]
   factor_vars <- names(data)[sapply(data, function(x) is.character(x) | is.factor(x))]
   
@@ -251,6 +253,7 @@ make_summary_one_sample <- function(data, group_var = "group") {
   
   combined <- dplyr::bind_rows(df_cat, df_numeric)
   return(combined)
+  
 }
 
 # Create summaries for your two samples.
@@ -304,7 +307,7 @@ final_gt_table <- combined_table %>%
   gt::cols_align("center")
 
 # --- Generate the final table using kable and kableExtra ---
-var_labels<-unique(combined_table$var)
+var_labels <- unique(combined_table$var)
 table1_obj <- combined_table %>%
   select(-var) %>%
   kable(
@@ -312,7 +315,7 @@ table1_obj <- combined_table %>%
     col.names = rep("", ncol(.)),
     format = "pipe"
   ) %>%
-  add_header_above(c(" " = 1, "Non-RA (N=210)" = 1, "RA (N=214)" = 1, "Non-RA (N=309)" = 1, "RA (N=309)" = 1)) %>%
+  add_header_above(c(" " = 1, "Non-RA (N=209)" = 1, "RA (N=209)" = 1, "Non-RA (N=309)" = 1, "RA (N=309)" = 1)) %>%
   add_header_above(c(" " = 1, "Sample A" = 2, "Sample B" = 2)) %>%
   kable_styling(full_width = FALSE, position = "center")
 
@@ -320,15 +323,17 @@ for (i in 1:length(var_labels)) {
   if (i == 1) {
     table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 1, end_row = 2)
   } else if (i == 2) {
-    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 3, end_row = 4)
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 3, end_row = 6)
   } else if (i == 3) {
-    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 5, end_row = 7)
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 7, end_row = 9)
   } else if (i == 4) {
-    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 8, end_row = 10)
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 10, end_row = 12)
+  } else if (i == 5) {
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = 13, end_row = 16)
   } else {
-    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = i + 6, end_row = i + 6)
+    table1_obj <- pack_rows(table1_obj, group_label = var_labels[i], start_row = i + 8, end_row = i + 8)
   }
 }
 
-saveRDS(combined_table, file = "../../table1_obj_df.rds")
-saveRDS(table1_obj, file = "../../table1_obj.rds")
+saveRDS(combined_table, file = "tables/table1_obj_df.rds")
+saveRDS(table1_obj, file = "tables/table1_obj.rds")

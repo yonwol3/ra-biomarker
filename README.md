@@ -6,10 +6,13 @@ The repository contains code, figures, and tables applied to 'Detecting Change-P
 ## Contents
 
 ### [`figures`]() Folder
-- contains all the figures generated for our analysis
+- Contains all the figures generated for our analysis
 
 ### [`stan`]() Folder
-- contains stan code (for both truncation, censored, and binarized models)
+- Contains STAN Models (for both truncation, censored, and binarized models)
+
+### [`simulation`]() Folder
+- Contains code for simulating exposure-outcome relationships. Purely pedagological but useful for testing methods.
 
 ### R Scripts 
 - [`clean-data-A.R`](): data cleaning for sample A.

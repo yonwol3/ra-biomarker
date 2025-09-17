@@ -18,21 +18,21 @@ library(kableExtra)
 ### Sample A
 
 # Reading data cleaning R file
-setwd("~/Dropbox/Projects/RA-Biomarker/")
+setwd("~/Documents/RA-Biomarker/")
 source("~/Github/ra-biomarker/clean-data-A.R")
 
 # Naming serum antibodies correctly
 colnames(Y) <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
 data_A <- data_A %>%
-  dplyr::rename('RF IgA'= igarfconc_ , 
-                'RF IgM'= igmrfconc_ , 
-                'RF IgG'= iggrfconc_ , 
-                'ACPA IgA'= igaccpavgconc, 
-                'ACPA IgM'= igmccpavgconc, 
-                'ACPA IgG'= iggccpavgconc)
+  dplyr::rename('RF IgA' = igarfconc_ , 
+                'RF IgM' = igmrfconc_ , 
+                'RF IgG' = iggrfconc_ , 
+                'ACPA IgA' = igaccpavgconc, 
+                'ACPA IgM' = igmccpavgconc, 
+                'ACPA IgG' = iggccpavgconc)
 
 # Assuming the original 'diagnosis' variable uses 0 for 'no_RA' and 1 for 'RA'
-data_A$diagnosis <- factor(data_A$diagnosis, levels = c(0, 1), labels = c("No RA", "RA"))
+data_A$diagnosis <- factor(data_A$diagnosis, levels = c("Control", "RA"), labels = c("No RA", "RA"))
 
 # List of outcome variables
 outcome_vars <- colnames(Y)
@@ -60,19 +60,19 @@ for (i in seq_along(outcome_vars)) {
   color <- outcome_colors[outcome_var]
   
   # Prepare data for plotting
-  df_plot <- data_A[, c("time", "diagnosis", outcome_var)]
+  df_plot <- data_A[, c("t_yrs", "diagnosis", outcome_var)]
   names(df_plot)[3] <- "outcome"  # Rename the outcome column for consistency
   
   # Fit smooth.spline for 'RA'
   df_ra <- df_plot[df_plot$diagnosis == "RA", ]
-  spline_ra <- smooth.spline(df_ra$time, df_ra$outcome, df = 4)
+  spline_ra <- smooth.spline(df_ra$t_yrs, df_ra$outcome, df = 4)
   
   # Fit smooth.spline for 'no_RA'
   df_no_ra <- df_plot[df_plot$diagnosis == "No RA", ]
-  spline_no_ra <- smooth.spline(df_no_ra$time, df_no_ra$outcome, df = 4)
+  spline_no_ra <- smooth.spline(df_no_ra$t_yrs, df_no_ra$outcome, df = 4)
   
   # Create a sequence of time points for smooth curves
-  time_seq <- seq(min(data_A$time, na.rm = TRUE), max(data_A$time, na.rm = TRUE), length.out = 1000)
+  time_seq <- seq(min(data_A$t_yrs, na.rm = TRUE), max(data_A$t_yrs, na.rm = TRUE), length.out = 1000)
   
   # Predict values using the fitted splines
   pred_ra <- predict(spline_ra, x = time_seq)
@@ -103,8 +103,7 @@ for (i in seq_along(outcome_vars)) {
               size = 1) +
     geom_vline(xintercept = 0, linetype="dashed") +
     # Labels and title
-    labs(title = paste(outcome_var, "Serum Levels Relative to RA Diagnosis (Sample A)"),
-         x = "Time Prior to Diagnosis ",
+    labs(x = "Time Prior to Diagnosis ",
          y = paste(outcome_var)) +
     # Minimal theme for a clean look
     theme_minimal() +
@@ -117,9 +116,16 @@ for (i in seq_along(outcome_vars)) {
   
 }
 
-ggarrange(plot_list[[1]], plot_list[[2]], plot_list[[3]],
-          plot_list[[4]], plot_list[[5]], plot_list[[6]], nrow = 3, ncol = 2, 
-          legend = "right", align = "v", common.legend = TRUE)
+ggarrange_args <- c(plot_list[1:6],  nrow = 3, ncol = 2, 
+                    legend = "right", align = "v", common.legend = TRUE) 
+
+combined_plot <- do.call(ggarrange, ggarrange_args)
+final_plot <- annotate_figure(combined_plot, top = text_grob("Serum Levels Relative to RA Diagnosis (Sample A)", face = "bold", size = 14))
+
+
+png("~/Documents/RA-Biomarker/figures/fig1.png", width = 800, height = 800)
+final_plot
+dev.off()
 
 
 ### Sample B
@@ -197,12 +203,11 @@ for (i in seq_along(biomarkers)) {
               aes(x = time, y = outcome), 
               color = color, 
               linetype = "dashed", 
-              size = 1) +
+              linewidth = 1) +
     geom_vline(xintercept = 0, linetype="dashed") +
     # Labels and title
-    labs(
-      x = "Time Prior to Diagnosis ",
-      y = paste(bio_label)) +
+    labs(x = "Time Prior to Diagnosis ",
+         y = paste(bio_label)) +
     # Minimal theme for a clean look
     theme_minimal() +
     # Center the plot title and remove legend title
@@ -214,9 +219,12 @@ for (i in seq_along(biomarkers)) {
   
 }
 
-ggarrange_args <- c(plot_list[1:8],  nrow = 2, ncol = 4, 
+ggarrange_args <- c(plot_list[1:8],  nrow = 4, ncol = 2, 
                     legend = "right", align = "v", common.legend = TRUE) 
 
-combined_plot<-do.call(ggarrange, ggarrange_args)
+combined_plot <- do.call(ggarrange, ggarrange_args)
 final_plot <- annotate_figure(combined_plot, top = text_grob("Serum Levels Relative to RA Diagnosis (Sample B)", face = "bold", size = 14))
-print(final_plot)
+
+png(filename = "~/Documents/RA-Biomarker/figures/fig2.png", width = 800, height = 800, units = "px")
+final_plot
+dev.off()

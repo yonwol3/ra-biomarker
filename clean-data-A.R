@@ -11,64 +11,74 @@ library(readxl)
 ## Data Cleaning
 
 setwd("~/Documents/RA-Biomarker/")
-raDat <- read.delim("~/Documents/RA-Biomarker/data/forKevin.txt", stringsAsFactors = FALSE)
-names(raDat) <- tolower(names(raDat))
-
-# raDat$race_ethnic<-race_clean$RACE_ETHNIC # the correct race/ethnicity values
-raDat_case <- subset(raDat, diagnosis == "RA")
-raDat_control <- subset(raDat, diagnosis == "Control")
+data_A <- read.delim("~/Documents/RA-Biomarker/data/forKevin.txt", stringsAsFactors = FALSE)
+names(data_A) <- tolower(names(data_A))
 
 serum_names <- c("igarfconc_", "igmrfconc_", "iggrfconc_",
                  "igaccpavgconc", "igmccpavgconc", "iggccpavgconc")
 
-raDat <- raDat[order(raDat$subj_id, raDat$sampnum),]
-raDat <- raDat[complete.cases(raDat[,serum_names]),] # remove one observation missing 3 measurements
+data_A <- data_A[order(data_A$subj_id, data_A$sampnum),]
+data_A <- data_A[complete.cases(data_A[,serum_names]),] # remove one observation missing 3 measurements
+data_A$subj_id <- as.integer(factor(data_A$subj_id))
+data_A$study_id <- as.integer(factor(data_A$study_id))
+data_A$diagnosis[is.na(data_A$diagnosis)] <- "RA" 
 
-raDat$subj_id <- as.integer(factor(raDat$subj_id))
-raDat$study_id <- as.integer(factor(raDat$study_id))
+## Generate Data Frame
 
-## Generate Data Frame for Table 1
+# Fix Race Variable
+
+data_A_case <- subset(data_A, diagnosis == "RA")
+data_A_case$race_ethnic <- NULL
+data_A_control <- subset(data_A, diagnosis == "Control")
+
+data_A_case <- data_A_control %>% 
+  group_by(study_id) %>%
+  filter(row_number() == 1) %>%
+  dplyr::summarize(race_ethnic = race_ethnic) %>%
+  ungroup() %>%
+  inner_join(data_A_case, by = "study_id")
+
+data_A <- rbind(data_A_case, data_A_control)
+
+rm(data_A_case, data_A_control)
 
 # Getting age at diagnosis variable from age and t_years variables
-tmp <- data.frame(agediag = raDat$age - raDat$t_yrs, subj_id = raDat$subj_id)
-mean_agediag <- aggregate(agediag ~ subj_id, tmp, mean)
-raDat <- join(raDat, mean_agediag, by = "subj_id", type = "left", match = "all")
+age_diag_tmp <- data.frame(age_diag = data_A$age - data_A$t_yrs, subj_id = data_A$subj_id)
+mean_age_diag <- aggregate(age_diag ~ subj_id, age_diag_tmp, mean)
+data_A <- join(data_A, mean_age_diag, by = "subj_id", type = "left", match = "all")
+
+rm(age_diag_tmp, mean_age_diag)
 
 ## Generate objects for data list to be passed to JAGS
 
 # Outcome matrix
-Y <- as.matrix(subset(raDat, select = serum_names) )
+Y <- as.matrix(subset(data_A, select = serum_names) )
 logY <- log(Y) # log transform responses
 
 # Sample numbers
 N <- nrow(Y) # number of samples
-M <- nlevels(factor(raDat$subj_id)) # number of participants
+M <- nlevels(factor(data_A$subj_id)) # number of participants
 K <- ncol(Y) # number of measurements per sample
 
 # Covariates
-time <- raDat$t_yrs # time before diagnosis
-fem <- ifelse(raDat$gender == "F", 1, 0) # indicator for female
-white <- ifelse(raDat$race_ethnic == "W", 1, 0) # indicator for white
-black <- ifelse(raDat$race_ethnic == "B", 1, 0) # indicator for black
-hisp <- ifelse(raDat$race_ethnic == "H", 1, 0) # indicator for Hispanic
-famhx <- ifelse(raDat$familyhxra == "Yes", 1, 0)
-
-age_diag <- raDat$agediag
-diagnosis <- ifelse(raDat$diagnosis == "RA", 1, 0)
-
-rm(tmp, mean_agediag)
+time <- data_A$t_yrs # time before diagnosis
+fem <- ifelse(data_A$gender == "F", 1, 0) # indicator for female
+white <- ifelse(data_A$race_ethnic == "W", 1, 0) # indicator for white
+black <- ifelse(data_A$race_ethnic == "B", 1, 0) # indicator for black
+hisp <- ifelse(data_A$race_ethnic == "H", 1, 0) # indicator for Hispanic
+famhx <- ifelse(data_A$familyhxra == "Yes", 1, 0)
+age_diag <- data_A$age_diag
+diagnosis <- ifelse(data_A$diagnosis == "RA", 1, 0)
 
 # ID vector
-subj_id <- raDat$subj_id
-study_id <- raDat$study_id
+subj_id <- data_A$subj_id
+study_id <- data_A$study_id
 
 maxY <- apply(Y, 2, max)
 minY <- apply(Y, 2, min)
 L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
 U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 D <- apply(Y, 2, function(z) as.numeric(z == max(z)))
-
-data_A <- data.frame(time, age_diag, fem, white, black, hisp, famhx, subj_id, study_id, diagnosis, Y)
 
 ## Add Dichotomous variables
 
