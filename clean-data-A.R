@@ -17,14 +17,6 @@ names(data_A) <- tolower(names(data_A))
 serum_names <- c("igarfconc_", "igmrfconc_", "iggrfconc_",
                  "igaccpavgconc", "igmccpavgconc", "iggccpavgconc")
 
-data_A <- data_A[order(data_A$subj_id, data_A$sampnum),]
-data_A <- data_A[complete.cases(data_A[,serum_names]),] # remove one observation missing 3 measurements
-data_A$subj_id <- as.integer(factor(data_A$subj_id))
-data_A$study_id <- as.integer(factor(data_A$study_id))
-data_A$diagnosis[is.na(data_A$diagnosis)] <- "RA" 
-
-## Generate Data Frame
-
 # Fix Race Variable
 
 data_A_case <- subset(data_A, diagnosis == "RA")
@@ -41,6 +33,14 @@ data_A_case <- data_A_control %>%
 data_A <- rbind(data_A_case, data_A_control)
 
 rm(data_A_case, data_A_control)
+
+## Generate Data Frame
+
+data_A <- data_A[order(data_A$subj_id, data_A$sampnum),]
+data_A <- data_A[complete.cases(data_A[,serum_names]),] # remove one observation missing 3 measurements
+data_A$subj_id <- as.integer(factor(data_A$subj_id))
+data_A$study_id <- as.integer(factor(data_A$study_id))
+data_A$diagnosis[is.na(data_A$diagnosis)] <- "RA"
 
 # Getting age at diagnosis variable from age and t_years variables
 age_diag_tmp <- data.frame(age_diag = data_A$age - data_A$t_yrs, subj_id = data_A$subj_id)
