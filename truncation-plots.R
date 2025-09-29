@@ -139,7 +139,7 @@ gamma_summ <- as.data.frame(gamma_summ)
 colnames(gamma_summ) <- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold <- left_join(closest_threshold,kappa_summ, by = "biomarker") 
 closest_threshold <- left_join(closest_threshold, gamma_summ, by = "biomarker")
-write.csv(closest_threshold,"../../truncated_summary_A.csv")
+write.csv(closest_threshold,"tables/truncated_summary_A.csv")
 
 #--------------------------------------#
 # New biomarkers w/truncation at LOD
@@ -270,7 +270,7 @@ gamma_summ <- as.data.frame(gamma_summ)
 colnames(gamma_summ) <- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold <- left_join(closest_threshold,kappa_summ, by="biomarker") 
 closest_threshold <- left_join(closest_threshold, gamma_summ, by="biomarker")
-write.csv(closest_threshold,"../../truncated_summary_B.csv")
+write.csv(closest_threshold,"tables/truncated_summary_B.csv")
 
 # combining the density plots into one plot for the main figure
 img1 <- image_read("figures/trunc_change-point-dens_A.png")
