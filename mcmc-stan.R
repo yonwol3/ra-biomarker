@@ -18,7 +18,7 @@ a <- b <- rep(0, times = K)
 R <- S <- diag(1e8, nrow = K, ncol = K) # beta/mu covariance hyperparameters
 
 standata_A <- list(N = N, M = M, K = K, Y = Y, L = L, U = U, D = D,
-                 t = time, g = diagnosis, id = study_id, a = a, b = b, S = S, R = R)
+                 t = time, g = diagnosis, id = subj_id, a = a, b = b, S = S, R = R)
 
 # Truncation at LoD
 stanmodel_trunc_A <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-trunc.stan", model_name = "stanmodel_trunc_A")
@@ -46,7 +46,7 @@ summary(mcmc_cens_A)
 
 # Binarize Detection
 standata_bin_A <- list(N = N, M = M, K = K, Y = Y_bin,
-                 t = time, g = diagnosis, id = study_id,
+                 t = time, g = diagnosis, id = subj_id,
                  a = a, b = b, S = S, R = R)
 
 stanmodel_bin_A <- stan_model(file = "~/Github/ra-biomarker/stan/change-point-bin.stan", model_name = "stanmodel_bin_A")
@@ -68,7 +68,7 @@ a <- b <- rep(0, times = K)
 R <- S <- diag(1e8, nrow = K, ncol = K) # beta/mu covariance hyperparameters
 
 standata_B <- list(N = N, M = M, K = K, Y = Y, L = L, U = U, D = D,
-                     t = time, g = diagnosis, id = study_id, 
+                     t = time, g = diagnosis, id = subj_id, 
                      a = a, b = b, S = S, R = R)
 
 # Truncation at LoD
