@@ -64,7 +64,7 @@ model {
     for (k in 1:K) {
       
       real rho = inv_logit((t[i] - delta[k]) * phi[k]);
-      real eta_0 = alpha[id[i],k] + beta1[k]*g[i];
+      real eta_0 = alpha[id[i],k] + beta1[k]*g[i] + beta2[k]*t[i];
       real eta_1 = eta_0 + gamma[k]*g[i]*(t[i] - delta[k]); 
       real mu = (1 - rho) * eta_0 + rho * eta_1;
       Y[i,k] ~ bernoulli_logit(mu);
