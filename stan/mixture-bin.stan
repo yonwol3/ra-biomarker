@@ -27,7 +27,7 @@ parameters {
   vector[K] alpha[M];
   vector[K] beta1;
   vector[K] beta2;
-  vector[K] gamma;
+  vector<lower=0>[K] gamma;
   
   // covariance
   vector<lower=0>[K] sigma_0;

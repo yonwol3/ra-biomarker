@@ -100,7 +100,7 @@ for (b in 1:K) {
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * exp((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -234,7 +234,7 @@ for (b in 1:K) {
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * exp((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
