@@ -25,8 +25,8 @@ data {
 
 parameters {
   
-  // mean function
-  vector[K] mu;
+  // mean
+  vector[K] theta;
   vector[K] alpha[M];
   vector[K] beta1;
   vector[K] beta2;
@@ -35,7 +35,9 @@ parameters {
   // covariance
   vector<lower=0>[K] sigma_0;
   vector<lower=0>[K] sigma_e;
-  vector<lower=-20,upper=10>[K] kappa;
+
+  // changepoint
+  vector<lower=-20,upper=10>[K] delta;
 
 }
 
@@ -48,40 +50,36 @@ transformed parameters {
 model {
 
   // Priors
-  mu ~ multi_normal(a, R);
+  theta ~ multi_normal(a, R);
   beta1 ~ multi_normal(b, S);
   beta2 ~ multi_normal(b, S);
   gamma ~ multi_normal(b, S);
-  
   sigma_e ~ cauchy(0, 5);
   sigma_0 ~ cauchy(0, 5);
-  kappa ~ uniform(-20, 10);
+  delta ~ uniform(-20, 10);
 
   // Random Intercept
-  alpha ~ multi_normal(mu, Sigma_0);
-  real eps = 1e-10;  // small nudge to prevent log(0)
+  alpha ~ multi_normal(theta, Sigma_0);
   
   // Likelihood
   for (i in 1:N) {
 
-    vector[K] eta_i;
-    
     for (k in 1:K) {
 
-      eta_i[k] = alpha[id[i],k] + beta1[k]*g[i] + beta2[k]*t[i] + gamma[k]*g[i]*fdim(t[i],kappa[k]);
+      real mu = alpha[id[i],k] + beta1[k]*g[i] + beta2[k]*t[i] + gamma[k]*g[i]*fdim(t[i], delta[k]);
 
       if (D[i,k] == 0) {
 
-        target += normal_lpdf(Y[i,k] | eta_i[k], sigma_e[k]);
+        target += normal_lpdf(Y[i,k] | mu, sigma_e[k]);
 
       } else if (D[i,k] == 1) {
 
-        real z = (U[i,k] - eta_i[k]) / sigma_e[k];
-        real p = 1.0 - Phi(z);
-        target += log(fmax(p, 1e-10));  // avoid log(0)
+        real z = (U[i,k] - mu) / sigma_e[k];
+        real pi = 1.0 - Phi(z);
+        target += log(fmax(pi, 1e-10));  // avoid log(0)
 
       }
-      
+
     }
     
   }

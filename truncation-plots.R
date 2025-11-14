@@ -20,7 +20,9 @@ time_grid <- seq(-20, 10, by = 0.01)
 K <- 6
 
 mcmc <- load(temp_file)
-kappa <- mcmc_trunc_A[ ,7:12]
+
+phi <- mcmc_trunc_A[ ,13:18]
+delta <- mcmc_trunc_A[ ,7:12]
 gamma <- mcmc_trunc_A[ ,1:6]
 
 biomarkers <- c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
@@ -36,14 +38,17 @@ png("figures/trunc_change-point-dens_A.png",
     res = 100, 
     units = "px")
 
-plot(density(kappa[,1]), lwd = 2,
-     col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
+plot(density(delta[,1]), 
+     lwd = 2,
+     col = outcome_colors[1], 
+     ylab = "Posterior Density",
+     xlab = "Years Prior to Diagnosis",
      ylim = c(0, 1.5),
      xlim = c(-20, 5),
      main = "Change Point Densities (Sample A)")
 
 for (i in 2:6) {
-  lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
+  lines(density(delta[,i]), lwd = 2, col = outcome_colors[i])
 }
 
 abline(v = 0, lty = 2, col = "blue")
@@ -58,29 +63,29 @@ legend("topleft",
 
 dev.off()
 
-### Table showing kappa, gamma, and the statistic (gamma + kappa)
+### Table showing delta, gamma, and the statistic (gamma + delta)
 
-kappa_summ <- data.frame(biomarker = character(0), kappa_summ = numeric(0)) 
+delta_summ <- data.frame(biomarker = character(0), delta_summ = numeric(0)) 
 
-for (i in 1:ncol(kappa)) {
-  kappa_tmp <- kappa[, i]
-  mean <- round(mean(kappa_tmp),2)
-  q_2 <- round(hpd(kappa_tmp)[1], 2) # 2.5th quantile
-  q_97 <-round(hpd(kappa_tmp)[2], 2) 
-  kappa_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
-  kappa_summ[i, 1] <- biomarker_labels[i]
+for (i in 1:ncol(delta)) {
+  delta_tmp <- delta[, i]
+  mean <- round(mean(delta_tmp), 2)
+  q_2 <- round(hpd(delta_tmp)[1], 2) # 2.5th quantile
+  q_97 <-round(hpd(delta_tmp)[2], 2) 
+  delta_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  delta_summ[i, 1] <- biomarker_labels[i]
 }
 
-colnames(kappa_summ) <- c("biomarker", "kappa mean[95% HPD CrI]")
+colnames(delta_summ) <- c("biomarker", "delta mean [95% HPD CrI]")
 
 # Define labels for each dimension
 
 time_labels <- as.character(time_grid)
-iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
+iteration_labels <- paste0("iter", seq_len(nrow(delta)))
 
 # Create a 3-dimensional array with named dimensions:
 # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-res <- array(NA, dim = c(K, length(time_grid), nrow(kappa)),
+res <- array(NA, dim = c(K, length(time_grid), nrow(delta)),
              dimnames = list(
                biomarker = biomarker_labels,
                time = time_labels,
@@ -91,16 +96,17 @@ res <- array(NA, dim = c(K, length(time_grid), nrow(kappa)),
 for (b in 1:K) {
   
   gamma_tmp <- gamma[, b]     # gamma values for biomarker b
-  kappa_tmp <- kappa[, b]     # kappa values for biomarker b
+  delta_tmp <- delta[, b]     # delta values for biomarker b
+  phi_tmp <- phi[, b]     # phi values for biomarker b
   
   for (i in seq_along(time_grid)) {
     
     t <- time_grid[i]
     
-    for (j in 1:nrow(kappa)) {
-      res[b, i, j] <- (t - kappa_tmp[j]) * gamma_tmp[j]
+    for (j in 1:nrow(delta)) {
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
-  
+    
   }
   
 }
@@ -114,7 +120,7 @@ result_df$time <-as.numeric(as.character(result_df$time))
 # Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
 result_df <- result_df %>% 
   dplyr::group_by(biomarker, time) %>% 
-  dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
+  dplyr::summarise(prop_positive = mean(value > 0), .groups = "drop") %>% 
   arrange(desc(prop_positive))
 
 # select time where absolute difference between prop_positive and 0.9 is minimized
@@ -124,20 +130,20 @@ closest_threshold <- result_df %>%
   dplyr::ungroup()%>% 
   arrange(time)
 
-gamma_summ <- matrix(NA,ncol = 2, nrow=length(biomarker_labels))
+gamma_summ <- matrix(NA, ncol = 2, nrow = length(biomarker_labels))
 
 for (i in 1:length(biomarker_labels)) {
   gamma_b <- gamma[, i]
   mean <- round(mean(gamma_b),2)
   q_2 <- round(hpd(gamma_b)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(gamma_b)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
+  gamma_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
   gamma_summ[i, 1] <- biomarker_labels[i]
 }
 
 gamma_summ <- as.data.frame(gamma_summ)
 colnames(gamma_summ) <- c("biomarker","gamma mean[95% HPD CrI]")
-closest_threshold <- left_join(closest_threshold,kappa_summ, by = "biomarker") 
+closest_threshold <- left_join(closest_threshold,delta_summ, by = "biomarker") 
 closest_threshold <- left_join(closest_threshold, gamma_summ, by = "biomarker")
 write.csv(closest_threshold,"tables/truncated_summary_A.csv")
 
@@ -147,7 +153,8 @@ write.csv(closest_threshold,"tables/truncated_summary_A.csv")
 
 load("mcmc/mcmc_trunc_B.RData")
 
-kappa <- mcmc_trunc_B[, 9:16]
+phi <- mcmc_trunc_B[, 17:24]
+delta <- mcmc_trunc_B[, 9:16]
 gamma <- mcmc_trunc_B[, 1:8]
 
 # Define labels for each dimension
@@ -166,14 +173,17 @@ png("figures/trunc_change-point-dens_B.png",
     res = 100, 
     units = "px")
 
-plot(density(kappa[,1]), lwd = 2,
-     col = outcome_colors[1], ylab = "Posterior Density", xlab = "Years Prior to Diagnosis",
+plot(density(delta[,1]),
+     lwd = 2,
+     col = outcome_colors[1], 
+     ylab = "Posterior Density",
+     xlab = "Years Prior to Diagnosis",
      ylim = c(0, 0.8),
      xlim = c(-20, 5),
      main = "Change Point Densities (Sample B)")
 
 for (i in 2:8) {
-  lines(density(kappa[,i]), lwd = 2, col = outcome_colors[i])
+  lines(density(delta[,i]), lwd = 2, col = outcome_colors[i])
 }
 
 abline(v = 0, lty = 2, col = "blue")
@@ -188,29 +198,29 @@ legend("topleft",
 
 dev.off()
 
-### Table showing kappa, gamma, and the statistic (gamma + kappa)
+### Table showing delta, gamma, and the statistic (gamma + delta)
 
-kappa_summ <- data.frame(biomarker = character(0),kappa_summ = numeric(0))
+delta_summ <- data.frame(biomarker = character(0),delta_summ = numeric(0))
 
-for (i in 1:ncol(kappa)) {
-  kappa_tmp <- kappa[, i]
-  mean <- round(mean(kappa_tmp),2)
-  q_2 <- round(hpd(kappa_tmp)[1], 2) # 2.5th quantile
-  q_97 <- round(hpd(kappa_tmp)[2], 2) 
-  kappa_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
-  kappa_summ[i, 1] <- biomarker_labels[i]
+for (i in 1:ncol(delta)) {
+  delta_tmp <- delta[,i]
+  mean <- round(mean(delta_tmp), 2)
+  q_2 <- round(hpd(delta_tmp)[1], 2) # 2.5th quantile
+  q_97 <- round(hpd(delta_tmp)[2], 2) 
+  delta_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  delta_summ[i, 1] <- biomarker_labels[i]
 }
 
-colnames(kappa_summ) <- c("biomarker","kappa mean[95% HPD CrI]")
+colnames(delta_summ) <- c("biomarker", "delta mean [95% HPD CrI]")
 
 K <- 8
 time_grid <- seq(-20, 10, by = 0.01)
 time_labels <- as.character(time_grid)
-iteration_labels <- paste0("iter", seq_len(nrow(kappa)))
+iteration_labels <- paste0("iter", seq_len(nrow(delta)))
 
 # Create a 3-dimensional array with named dimensions:
 # Dimension 1: Biomarker, Dimension 2: Time, Dimension 3: Iteration
-res <- array(NA, dim = c(K, length(time_grid), nrow(kappa)),
+res <- array(NA, dim = c(K, length(time_grid), nrow(delta)),
              dimnames = list(
                biomarker = biomarker_labels,
                time = time_labels,
@@ -221,14 +231,15 @@ res <- array(NA, dim = c(K, length(time_grid), nrow(kappa)),
 for (b in 1:K) {
   
   gamma_tmp <- gamma[, b]     # gamma values for biomarker b
-  kappa_tmp <- kappa[, b]     # kappa values for biomarker b
+  delta_tmp <- delta[, b]     # delta values for biomarker b
+  phi_tmp <- phi[, b]     # phi values for biomarker b
   
   for (i in seq_along(time_grid)) {
     
     t <- time_grid[i]
     
-    for (j in 1:nrow(kappa)) {
-      res[b, i, j] <- (t - kappa_tmp[j]) * gamma_tmp[j]
+    for (j in 1:nrow(delta)) {
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -244,7 +255,7 @@ result_df$time <-as.numeric(as.character(result_df$time))
 # Calculate the proportion of iterations for which 'value' > 0, for each biomarker and time point.
 result_df <- result_df %>% 
   dplyr::group_by(biomarker, time) %>% 
-  dplyr::summarise(prop_positive = mean(value > 0),.groups = "drop") %>% 
+  dplyr::summarise(prop_positive = mean(value > 0), .groups = "drop") %>% 
   arrange(desc(prop_positive))
 
 # select time where absolute difference between prop_positive and 0.9 is minimized
@@ -262,14 +273,14 @@ for ( i in 1:length(biomarker_labels)) {
   mean <- round(mean(gamma_tmp),2)
   q_2 <- round(hpd(gamma_tmp)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(gamma_tmp)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2] <- paste(mean, "[",q_2,"-",q_97,"]")
+  gamma_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
   gamma_summ[i, 1] <- biomarker_labels[i]
 }
 
 gamma_summ <- as.data.frame(gamma_summ)
 colnames(gamma_summ) <- c("biomarker","gamma mean[95% HPD CrI]")
-closest_threshold <- left_join(closest_threshold,kappa_summ, by="biomarker") 
-closest_threshold <- left_join(closest_threshold, gamma_summ, by="biomarker")
+closest_threshold <- left_join(closest_threshold, delta_summ, by = "biomarker") 
+closest_threshold <- left_join(closest_threshold, gamma_summ, by = "biomarker")
 write.csv(closest_threshold,"tables/truncated_summary_B.csv")
 
 # combining the density plots into one plot for the main figure
