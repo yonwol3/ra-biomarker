@@ -17,7 +17,7 @@ load("mcmc/mcmc_cens_A.RData")
 K <- 6
 time_grid <- seq(-20, 10, by = 0.01)
 
-phi <- mcmc_cens_A[ ,13:18] 
+# phi <- mcmc_cens_A[ ,13:18] 
 delta <- mcmc_cens_A[ ,7:12] 
 gamma <- mcmc_cens_A[ ,1:6]
 
@@ -68,7 +68,7 @@ for (i in 1:ncol(delta)) {
   mean <- round(mean(delta_tmp),2)
   q_2 <- round(hpd(delta_tmp)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(delta_tmp)[2], 2) 
-  delta_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  delta_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   delta_summ[i, 1] <- biomarker_labels[i]
 }
 
@@ -93,14 +93,14 @@ for (b in 1:K) {
   
   gamma_tmp <- gamma[, b]     # gamma values for biomarker b
   delta_tmp <- delta[, b]     # delta values for biomarker b
-  phi_tmp <- phi[, b]     # phi values for biomarker b
+  # phi_tmp <- phi[, b]     # phi values for biomarker b
   
   for (i in seq_along(time_grid)) {
     
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -134,7 +134,7 @@ for (i in 1:length(biomarker_labels)) {
   mean <- round(mean(gamma_tmp),2)
   q_2 <- round(hpd(gamma_tmp)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(gamma_tmp)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  gamma_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   gamma_summ[i, 1] <- biomarker_labels[i]
 }
 
@@ -154,7 +154,7 @@ time_grid <- seq(-20, 10, by = 0.01)
 time_labels <- as.character(time_grid)
 iteration_labels <- paste0("iter", seq_len(nrow(delta)))
 
-phi <- mcmc_cens_B[, 17:24]
+# phi <- mcmc_cens_B[, 17:24]
 delta <- mcmc_cens_B[, 9:16]
 gamma <- mcmc_cens_B[, 1:8]
 
@@ -208,7 +208,7 @@ for (i in 1:ncol(delta)) {
   mean <- round(mean(delta_tmp),2)
   q_2 <- round(hpd(delta_tmp)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(delta_tmp)[2], 2) 
-  delta_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  delta_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   delta_summ[i, 1] <- biomarker_labels[i]
 }
 
@@ -227,14 +227,14 @@ for (b in 1:K) {
   
   gamma_tmp <- gamma[, b]     # gamma values for biomarker b
   delta_tmp <- delta[, b]     # delta values for biomarker b
-  phi_tmp <- phi[, b]     # phi values for biomarker b
+  # phi_tmp <- phi[, b]     # phi values for biomarker b
   
   for (i in seq_along(time_grid)) {
     
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -267,7 +267,7 @@ for (i in 1:length(biomarker_labels)) {
   mean <- round(mean(gamma_tmp),2)
   q_2 <- round(hpd(gamma_tmp)[1], 2) # 2.5th quantile
   q_97 <-round(hpd(gamma_tmp)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  gamma_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   gamma_summ[i, 1] <- biomarker_labels[i]
 }
 

@@ -14,14 +14,14 @@ source("~/Github/ra-biomarker/hpd.R")
 # Original biomarkers w/truncation at LOD
 #--------------------------------------#
 
-setwd("~/Documents/RA-Biomarker/")
+setwd("~/Documents/ra-biomarker/")
 temp_file <- "mcmc/mcmc_trunc_A.RData"
 time_grid <- seq(-20, 10, by = 0.01)
 K <- 6
 
 mcmc <- load(temp_file)
 
-phi <- mcmc_trunc_A[ ,13:18]
+# phi <- mcmc_trunc_A[ ,13:18]
 delta <- mcmc_trunc_A[ ,7:12]
 gamma <- mcmc_trunc_A[ ,1:6]
 
@@ -44,7 +44,7 @@ plot(density(delta[,1]),
      ylab = "Posterior Density",
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 1.5),
-     xlim = c(-20, 5),
+     xlim = c(-20, 10),
      main = "Change Point Densities (Sample A)")
 
 for (i in 2:6) {
@@ -72,7 +72,7 @@ for (i in 1:ncol(delta)) {
   mean <- round(mean(delta_tmp), 2)
   q_2 <- round(hpd(delta_tmp)[1], 2) # 2.5th quantile
   q_97 <-round(hpd(delta_tmp)[2], 2) 
-  delta_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  delta_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   delta_summ[i, 1] <- biomarker_labels[i]
 }
 
@@ -97,14 +97,14 @@ for (b in 1:K) {
   
   gamma_tmp <- gamma[, b]     # gamma values for biomarker b
   delta_tmp <- delta[, b]     # delta values for biomarker b
-  phi_tmp <- phi[, b]     # phi values for biomarker b
+  # phi_tmp <- phi[, b]     # phi values for biomarker b
   
   for (i in seq_along(time_grid)) {
     
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -137,7 +137,7 @@ for (i in 1:length(biomarker_labels)) {
   mean <- round(mean(gamma_b),2)
   q_2 <- round(hpd(gamma_b)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(gamma_b)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  gamma_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   gamma_summ[i, 1] <- biomarker_labels[i]
 }
 
@@ -179,7 +179,7 @@ plot(density(delta[,1]),
      ylab = "Posterior Density",
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 0.8),
-     xlim = c(-20, 5),
+     xlim = c(-20, 10),
      main = "Change Point Densities (Sample B)")
 
 for (i in 2:8) {
@@ -207,7 +207,7 @@ for (i in 1:ncol(delta)) {
   mean <- round(mean(delta_tmp), 2)
   q_2 <- round(hpd(delta_tmp)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(delta_tmp)[2], 2) 
-  delta_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  delta_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   delta_summ[i, 1] <- biomarker_labels[i]
 }
 
@@ -239,7 +239,7 @@ for (b in 1:K) {
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] * plogis((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- (t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -273,7 +273,7 @@ for ( i in 1:length(biomarker_labels)) {
   mean <- round(mean(gamma_tmp),2)
   q_2 <- round(hpd(gamma_tmp)[1], 2) # 2.5th quantile
   q_97 <- round(hpd(gamma_tmp)[2], 2) # 97.5th quantile
-  gamma_summ[i, 2] <- paste(mean, "[",q_2,", ",q_97,"]")
+  gamma_summ[i, 2] <- paste0(mean, "[",q_2,", ",q_97,"]")
   gamma_summ[i, 1] <- biomarker_labels[i]
 }
 

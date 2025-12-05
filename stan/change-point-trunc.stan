@@ -30,7 +30,7 @@ parameters {
   vector[K] alpha[M];
   vector[K] beta1;
   vector[K] beta2;
-  vector[K] gamma;
+  vector<lower=0>[K] gamma;
   
   // covariance
   cholesky_factor_corr[K] corr_e;
@@ -66,9 +66,6 @@ model {
 
   // Random Intercept
   alpha ~ multi_normal(theta, Sigma_0);
-  
-  // Likelihood
-  Y ~ multi_normal_cholesky(mu, Sigma_e);
 
   for (i in 1:N) {
     
@@ -79,5 +76,8 @@ model {
     }
     
   }
+
+  // Likelihood
+  Y ~ multi_normal_cholesky(mu, Sigma_e);
 
 }

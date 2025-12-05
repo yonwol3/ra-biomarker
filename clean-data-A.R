@@ -75,7 +75,7 @@ subj_id <- data_A$subj_id
 study_id <- data_A$study_id
 
 maxY <- apply(Y, 2, max)
-minY <- apply(Y, 2, min)
+minY <- rep(0, K) # apply(Y, 2, min)
 L <- matrix(rep(minY, N), ncol = K, byrow = TRUE)
 U <- matrix(rep(maxY, N), ncol = K, byrow = TRUE)
 D <- apply(Y, 2, function(z) as.numeric(z == max(z)))
