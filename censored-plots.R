@@ -1,6 +1,5 @@
 library(readxl)
 library(tidyverse)
-library(Microsoft365R)
 library(ggplot2)
 library(RColorBrewer)
 library(gridExtra)
@@ -38,7 +37,7 @@ plot(density(delta[,1]),
      ylab = "Posterior Density", 
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 1),
-     xlim = c(-20, 10),
+     xlim = c(-20, 5),
      main = "Change Point Densities (Sample A)")
 
 for (i in 2:6) {
@@ -178,7 +177,7 @@ plot(density(delta[,1]),
      ylab = "Posterior Density", 
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 0.8),
-     xlim = c(-20, 10),
+     xlim = c(-20, 5),
      main = "Change Point Densities (Sample B)")
 
 for (i in 2:8) {

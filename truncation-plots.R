@@ -1,6 +1,5 @@
 library(readxl)
 library(tidyverse)
-library(Microsoft365R)
 library(ggplot2)
 library(RColorBrewer)
 library(gridExtra)
@@ -42,7 +41,7 @@ plot(density(delta[,1]),
      ylab = "Posterior Density",
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 1.5),
-     xlim = c(-20, 10),
+     xlim = c(-20, 5),
      main = "Change Point Densities (Sample A)")
 
 for (i in 2:6) {
@@ -151,7 +150,7 @@ write.csv(closest_threshold,"tables/truncated_summary_A.csv")
 
 load("mcmc/mcmc_trunc_B.RData")
 
-phi <- mcmc_trunc_B[, 17:24]
+# phi <- mcmc_trunc_B[, 17:24]
 delta <- mcmc_trunc_B[, 9:16]
 gamma <- mcmc_trunc_B[, 1:8]
 
@@ -177,7 +176,7 @@ plot(density(delta[,1]),
      ylab = "Posterior Density",
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 0.8),
-     xlim = c(-20, 10),
+     xlim = c(-20, 5),
      main = "Change Point Densities (Sample B)")
 
 for (i in 2:8) {
@@ -230,7 +229,7 @@ for (b in 1:K) {
   
   gamma_tmp <- gamma[, b]     # gamma values for biomarker b
   delta_tmp <- delta[, b]     # delta values for biomarker b
-  phi_tmp <- phi[, b]     # phi values for biomarker b
+  # phi_tmp <- phi[, b]     # phi values for biomarker b
   
   for (i in seq_along(time_grid)) {
     
