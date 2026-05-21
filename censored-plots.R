@@ -31,17 +31,17 @@ png("figures/cens_change-point-dens_A.png",
     res = 100, 
     units = "px")
 
-plot(density(delta[,1]), 
+plot(density(delta[,1], bw = 0.5), 
      lwd = 2,
      col = outcome_colors[1], 
      ylab = "Posterior Density", 
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 1),
-     xlim = c(-20, 5),
+     xlim = c(-20, 10),
      main = "Change Point Densities (Sample A)")
 
 for (i in 2:6) {
-  lines(density(delta[,i]), lwd = 2, col = outcome_colors[i])
+  lines(density(delta[,i], bw = 0.5), lwd = 2, col = outcome_colors[i])
 }
 
 abline(v = 0, lty = 2, col = "blue")
@@ -171,17 +171,17 @@ png("figures/cens_change-point-dens_B.png",
     res = 100, 
     units = "px")
 
-plot(density(delta[,1]), 
+plot(density(delta[,1], bw = 0.5), 
      lwd = 2,
      col = outcome_colors[1], 
      ylab = "Posterior Density", 
      xlab = "Years Prior to Diagnosis",
      ylim = c(0, 0.8),
-     xlim = c(-20, 5),
+     xlim = c(-20, 10),
      main = "Change Point Densities (Sample B)")
 
 for (i in 2:8) {
-  lines(density(delta[,i]), lwd = 2, col = outcome_colors[i])
+  lines(density(delta[,i], bw = 0.5), lwd = 2, col = outcome_colors[i])
 }
 
 abline(v = 0, lty = 2, col = "blue")

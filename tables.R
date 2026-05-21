@@ -8,7 +8,7 @@
 library(tidyverse)
 library(labelled)
 library(table1)
-library(naniar)
+# library(naniar)
 library(mcmcse)
 library(gt)
 library(kableExtra)
@@ -126,11 +126,8 @@ data_B_tb1 <- set_variable_labels(data_B_tb1,
                                  `mean_aptiva_acpafsigafibrinogen_≥5#00au`="acpafsigafibrinogen",
                                  `mean_aptiva_acpafsigahistone1_≥5#00au`="acpafsigahistone1" )
 
-#--------------------#
-#
+
 # table-1 BOTH cohorts
-#
-#---------------------#
 # Set variable labels for data_B_tb1
 
 # Create Table 1 datasets by removing the subject ID column and renaming 'diagnosis' as 'group'
