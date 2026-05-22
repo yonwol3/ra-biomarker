@@ -20,8 +20,8 @@ The repository contains code, figures, and tables applied to 'Detecting Change-P
 - [`hpd.R`](https://github.com/yonwol3/ra-biomarker/blob/main/hpd.R): Function for constructing highest posterior density credible intervals.
 - [`loess-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/loess-plots.R): Code to generate the loess plots.
 - [`tables.R`](https://github.com/yonwol3/ra-biomarker/blob/main/tables.R): includes  Code used to generate Table 1.
-- [`truncated-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/truncated-plots.R): code to generate the posterior density plots and summaries for the truncated model (both sample A and B biomarkers) 
+- [`truncation-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/truncation-plots.R): code to generate the posterior density plots and summaries for the truncated model (both sample A and B biomarkers) 
 - [`censored-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/censored-plots.R): code to generate the posterior density plots and summaries for the right-censored model (both sample A and B biomarkers) 
-- [`binary-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/binary-plots.R): code to generate the posterior density plots and summaries after binarizing outcome model (both sample A and B biomarkers) 
+- [`correlation-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/correlation-plots.R): code to generate the posterior change-point (delta) correlation matrices (Figures S1 and S2).
 
 ## References
