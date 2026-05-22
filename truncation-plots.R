@@ -101,7 +101,7 @@ for (b in 1:K) {
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- pmax(0, t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- max(0, t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -236,7 +236,7 @@ for (b in 1:K) {
     t <- time_grid[i]
     
     for (j in 1:nrow(delta)) {
-      res[b, i, j] <- pmax(0, t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
+      res[b, i, j] <- max(0, t - delta_tmp[j]) * gamma_tmp[j] # * plogis((t - delta_tmp[j])*phi_tmp[j])
     }
     
   }
@@ -296,10 +296,10 @@ g2 <- ggdraw() +
 # Arrange side by side with labels A and B
 grid_plot <- plot_grid(
   g1, g2,
-  labels     = c("A", "B"),
+  labels = c("A", "B"),
   label_size = 22,
-  ncol       = 2,
-  align      = "hv"
+  ncol = 2,
+  align = "hv"
 )
 
 png("~/Documents/RA-Biomarker/figures/fig3.png", height = 800, width = 1000)
