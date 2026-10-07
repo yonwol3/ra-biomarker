@@ -34,7 +34,7 @@ Sample B values reported as exactly 0 are set to half the minimum positive value
 - [`censored-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/censored-plots.R): **sensitivity** results — the same densities and summaries for the diagonal censored model (`figures/cens_change-point-dens_{A,B}.png`, `tables/censored_summary_{A,B}.csv`). Does not touch Figure 3.
 - [`correlation-plots.R`](https://github.com/yonwol3/ra-biomarker/blob/main/correlation-plots.R): posterior change-point (delta) correlation matrices (Supplement), parameterised by `model_tag` (default "censcorr").
 
-Each script re-sources the cleaning scripts and leaves objects named after base functions (`mean`, `t`, `gamma`) in the global environment. **Run each script in a fresh R session**, in the order: `mcmc-stan.R` → plotting/table scripts.
+Each script re-sources the cleaning scripts and leaves objects named after base functions (`mean`, `t`, `gamma`) in the global environment.
 
 ## References
 
