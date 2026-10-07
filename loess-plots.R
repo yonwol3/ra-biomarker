@@ -59,9 +59,8 @@ for (i in seq_along(outcome_vars)) {
   outcome_var <- outcome_vars[i]
   color <- outcome_colors[outcome_var]
   
-  # Prepare data for plotting
-  df_plot <- data_A[, c("t_yrs", "diagnosis", outcome_var)]
-  names(df_plot)[3] <- "outcome"  # Rename the outcome column for consistency
+  # Prepare data for plotting (log scale, from the cleaned Y matrix)
+  df_plot <- data.frame(t_yrs = data_A$t_yrs, diagnosis = data_A$diagnosis, outcome = log(Y[, i]))
   
   # Fit smooth.spline for 'RA'
   df_ra <- df_plot[df_plot$diagnosis == "RA", ]
@@ -85,8 +84,8 @@ for (i in seq_along(outcome_vars)) {
   # Generate the plot
   p <- ggplot() +
     # Scatter points for actual data
-    geom_point(data = df_plot, 
-               aes(x = time, y = outcome, color = diagnosis), 
+    geom_point(data = df_plot,
+               aes(x = t_yrs, y = outcome, color = diagnosis),
                alpha = point_alpha) +
     # Manual color scale
     scale_color_manual(values = group_colors) +
@@ -103,8 +102,8 @@ for (i in seq_along(outcome_vars)) {
               size = 1) +
     geom_vline(xintercept = 0, linetype="dashed") +
     # Labels and title
-    labs(x = "Time Prior to Diagnosis ",
-         y = paste(outcome_var)) +
+    labs(x = "Years Relative to Diagnosis",
+         y = paste("log", outcome_var)) +
     # Minimal theme for a clean look
     theme_minimal() +
     # Center the plot title and remove legend title
@@ -120,7 +119,7 @@ ggarrange_args <- c(plot_list[1:6],  nrow = 3, ncol = 2,
                     legend = "right", align = "v", common.legend = TRUE) 
 
 combined_plot <- do.call(ggarrange, ggarrange_args)
-final_plot <- annotate_figure(combined_plot, top = text_grob("Serum Levels Relative to RA Diagnosis (Sample A)", face = "bold", size = 14))
+final_plot <- annotate_figure(combined_plot, top = text_grob("Serum Levels Relative to RA Diagnosis (Cohort A)", face = "bold", size = 14))
 
 
 png("~/Documents/RA-Biomarker/figures/fig1.png", width = 800, height = 800)
@@ -160,11 +159,10 @@ for (i in seq_along(biomarkers)) {
   bio_label<-biomarkers_labels[i] # instead of full biomarker name use shortened version 
   color <- outcome_colors[outcome_var]
   
-  # Prepare data for plotting
-  df_plot <- data_B[, c("t_yrs", "diagnosis", outcome_var)]
-  names(df_plot)[3] <- "outcome"  # Rename the outcome column for consistency
-  #df_plot$outcome <- log(ifelse(df_plot[[outcome_var]] == 0, 0.00001, df_plot[[outcome_var]])) # log transform the outcome
-  
+  # Prepare data for plotting (log scale, from the cleaned Y matrix; zeros are
+  # already set to min-positive/2 per biomarker in clean-data-B.R)
+  df_plot <- data.frame(t_yrs = data_B$t_yrs, diagnosis = data_B$diagnosis, outcome = log(Y[, i]))
+
   
   # Fit smooth.spline for 'RA'
   df_ra <- df_plot[df_plot$diagnosis == "RA", ]
@@ -206,8 +204,8 @@ for (i in seq_along(biomarkers)) {
               linewidth = 1) +
     geom_vline(xintercept = 0, linetype="dashed") +
     # Labels and title
-    labs(x = "Time Prior to Diagnosis ",
-         y = paste(bio_label)) +
+    labs(x = "Years Relative to Diagnosis",
+         y = paste("log", bio_label)) +
     # Minimal theme for a clean look
     theme_minimal() +
     # Center the plot title and remove legend title
@@ -223,7 +221,7 @@ ggarrange_args <- c(plot_list[1:8],  nrow = 4, ncol = 2,
                     legend = "right", align = "v", common.legend = TRUE) 
 
 combined_plot <- do.call(ggarrange, ggarrange_args)
-final_plot <- annotate_figure(combined_plot, top = text_grob("Serum Levels Relative to RA Diagnosis (Sample B)", face = "bold", size = 14))
+final_plot <- annotate_figure(combined_plot, top = text_grob("Serum Levels Relative to RA Diagnosis (Cohort B)", face = "bold", size = 14))
 
 png(filename = "~/Documents/RA-Biomarker/figures/fig2.png", width = 800, height = 800, units = "px")
 final_plot

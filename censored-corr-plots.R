@@ -3,22 +3,25 @@ library(tidyverse)
 library(ggplot2)
 library(RColorBrewer)
 library(gridExtra)
+library(magick)
+library(cowplot)
 source("~/Github/ra-biomarker/hpd.R")
 
 #--------------------------------------#
 # Original biomarkers w/censoring at LOD
+# + residual correlation (PRIMARY)
 #--------------------------------------#
 
 setwd("~/Documents/RA-Biomarker/")
-temp_file <- "mcmc/mcmc_cens_A.RData"
+temp_file <- "mcmc/mcmc_censcorr_A.RData"
 time_grid <- seq(-20, 10, by = 0.01)
 K <- 6
 
 mcmc <- load(temp_file)
 
-# phi <- mcmc_cens_A[ ,13:18]
-delta <- mcmc_cens_A[ ,7:12]
-gamma <- mcmc_cens_A[ ,1:6]
+# phi <- mcmc_censcorr_A[ ,13:18]
+delta <- mcmc_censcorr_A[ ,7:12]
+gamma <- mcmc_censcorr_A[ ,1:6]
 
 biomarkers <- c("RF IgA","RF IgM","RF IgG","ACPA IgA","ACPA IgM","ACPA IgG")
 biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACPA IgG")
@@ -27,11 +30,14 @@ biomarker_labels <- c("RF IgA", "RF IgM", "RF IgG", "ACPA IgA", "ACPA IgM", "ACP
 outcome_colors <- brewer.pal(6, "Set1")
 outcome_colors[6] <- "#F781BF"
 
-png("figures/cens_change-point-dens_A.png",
+png("figures/censcorr_change-point-dens_A.png",
     width = 1000,
     height = 1000,
-    res = 100,
+    res = 200,
+    pointsize = 10,
     units = "px")
+
+par(mar = c(4, 4, 2.5, 1))
 
 plot(density(delta[,1], bw = 0.5),
      lwd = 2,
@@ -54,7 +60,7 @@ legend("topleft",
        legend = biomarkers,
        col = outcome_colors,
        lwd = rep(2, 6),
-       cex = 1)
+       cex = 0.85)
 
 dev.off()
 
@@ -140,17 +146,18 @@ gamma_summ <- as.data.frame(gamma_summ)
 colnames(gamma_summ) <- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold <- left_join(closest_threshold,delta_summ, by = "biomarker")
 closest_threshold <- left_join(closest_threshold, gamma_summ, by = "biomarker")
-write.csv(closest_threshold,"tables/censored_summary_A.csv")
+write.csv(closest_threshold,"tables/censcorr_summary_A.csv")
 
 #--------------------------------------#
 # New biomarkers w/censoring at LOD
+# + residual correlation (PRIMARY)
 #--------------------------------------#
 
-load("mcmc/mcmc_cens_B.RData")
+load("mcmc/mcmc_censcorr_B.RData")
 
-# phi <- mcmc_cens_B[, 17:24]
-delta <- mcmc_cens_B[, 9:16]
-gamma <- mcmc_cens_B[, 1:8]
+# phi <- mcmc_censcorr_B[, 17:24]
+delta <- mcmc_censcorr_B[, 9:16]
+gamma <- mcmc_censcorr_B[, 1:8]
 
 # Define labels for each dimension
 biomarkers<-c("anti-CCP3 (IgG)","anti-citVim2 (IgG)", "anti-citFib (IgG)","anti-citHis1 (IgG)",
@@ -162,11 +169,14 @@ names(outcome_colors) <- biomarkers
 
 ### changepoint density plots####
 
-png("figures/cens_change-point-dens_B.png",
+png("figures/censcorr_change-point-dens_B.png",
     width = 1000,
     height = 1000,
-    res = 100,
+    res = 200,
+    pointsize = 10,
     units = "px")
+
+par(mar = c(4, 4, 2.5, 1))
 
 plot(density(delta[,1], bw = 0.5),
      lwd = 2,
@@ -189,7 +199,7 @@ legend("topleft",
        legend = biomarker_labels,
        col = outcome_colors,
        lwd = rep(2, 8),
-       cex = 1)
+       cex = 0.85)
 
 dev.off()
 
@@ -276,4 +286,30 @@ gamma_summ <- as.data.frame(gamma_summ)
 colnames(gamma_summ) <- c("biomarker","gamma mean[95% HPD CrI]")
 closest_threshold <- left_join(closest_threshold, delta_summ, by = "biomarker")
 closest_threshold <- left_join(closest_threshold, gamma_summ, by = "biomarker")
-write.csv(closest_threshold,"tables/censored_summary_B.csv")
+write.csv(closest_threshold,"tables/censcorr_summary_B.csv")
+
+# combining the density plots into one plot for the main figure
+img1 <- image_read("figures/censcorr_change-point-dens_A.png")
+img2 <- image_read("figures/censcorr_change-point-dens_B.png")
+
+# Create ggplot-like objects from the images
+g1 <- ggdraw() +
+  draw_image(img1, scale = 1) +
+  theme(plot.margin = unit(rep(0, 4), "cm"))
+
+g2 <- ggdraw() +
+  draw_image(img2, scale = 1) +
+  theme(plot.margin = unit(rep(0, 4), "cm"))
+
+# Arrange side by side with labels A and B
+grid_plot <- plot_grid(
+  g1, g2,
+  labels = c("A", "B"),
+  label_size = 40,
+  ncol = 2,
+  align = "hv"
+)
+
+png("~/Documents/RA-Biomarker/figures/fig3.png", height = 1000, width = 2000)
+print(grid_plot)
+dev.off()

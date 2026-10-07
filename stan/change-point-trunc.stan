@@ -71,12 +71,16 @@ model {
   // Mean structure
   vector[K] mu[N];
   for (i in 1:N) {
+
     for (k in 1:K) {
+  
       mu[i,k] = alpha[id[i],k]
               + beta1[k]*g[i]
               + beta2[k]*t[i]
               + gamma[k]*g[i]*fdim(t[i], delta[k]);
+  
     }
+  
   }
 
   // Likelihood

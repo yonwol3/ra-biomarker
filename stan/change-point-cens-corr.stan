@@ -12,7 +12,7 @@ data {
   vector[N] g;
   vector[K] Y[N];
 
-  // censored cells (D == 1)
+  // censored cells 
   int<lower=0> Ncens;
   int cens_row[Ncens];
   int cens_col[Ncens];
@@ -25,15 +25,6 @@ data {
 
 }
 
-transformed data {
-
-  // 0/1 censoring mask rebuilt from the index list
-  int cens_mask[N, K] = rep_array(0, N, K);
-  for (n in 1:Ncens)
-    cens_mask[cens_row[n], cens_col[n]] = 1;
-
-}
-
 parameters {
 
   // mean
@@ -43,18 +34,23 @@ parameters {
   vector[K] beta2;
   vector[K] gamma;
 
-  // covariance (diagonal: no correlation parameters)
+  // covariance
+  cholesky_factor_corr[K] L_corr_e;
   vector<lower=0>[K] sigma_0;
   vector<lower=0>[K] sigma_e;
 
   // changepoint
   vector<lower=-20, upper=10>[K] delta;
 
+  // latent values above the upper limit of detection
+  vector<lower=0>[Ncens] Y_excess;
+
 }
 
 transformed parameters {
 
   vector[K] alpha[M];
+  matrix[K,K] L_Sigma_e = diag_pre_multiply(sigma_e, L_corr_e);
 
   // Non-centered: alpha[m] ~ N(theta, diag(sigma_0^2))
   for (m in 1:M)
@@ -64,43 +60,42 @@ transformed parameters {
 
 model {
 
-  // Priors (identical to the primary)
+  // Complete the outcome: splice the latent (>= U) values into the censored cells.
+  vector[K] Y_full[N] = Y;
+  
+  for (n in 1:Ncens)
+    Y_full[cens_row[n], cens_col[n]] = U[cens_row[n], cens_col[n]] + Y_excess[n];
+
+  // Priors
   theta  ~ multi_normal(a, R);
   beta1  ~ multi_normal(b, S);
   beta2  ~ multi_normal(b, S);
   gamma  ~ multi_normal(b, S);
 
-  sigma_e ~ cauchy(0, 5);
-  sigma_0 ~ cauchy(0, 5);
+  L_corr_e ~ lkj_corr_cholesky(2);
+  sigma_e  ~ cauchy(0, 5);
+  sigma_0  ~ cauchy(0, 5);
 
   // Non-centered random intercepts
   for (m in 1:M)
     alpha_raw[m] ~ std_normal();
 
-  // Likelihood (componentwise; censored cells via the survival function)
+  // Mean structure
+  vector[K] mu[N];
   for (i in 1:N) {
 
     for (k in 1:K) {
-
-      real mu = alpha[id[i],k]
+  
+      mu[i,k] = alpha[id[i],k]
               + beta1[k]*g[i]
               + beta2[k]*t[i]
               + gamma[k]*g[i]*fdim(t[i], delta[k]);
-
-      if (cens_mask[i,k] == 0) {
-
-        target += normal_lpdf(Y[i,k] | mu, sigma_e[k]);
-
-      } else {
-
-        real z = (U[i,k] - mu) / sigma_e[k];
-        real pi = 1.0 - Phi(z);
-        target += log(fmax(pi, 1e-10));  // avoid log(0)
-
-      }
     
     }
   
   }
+
+  // Likelihood (completed vectors are multivariate normal)
+  Y_full ~ multi_normal_cholesky(mu, L_Sigma_e);
 
 }

@@ -54,7 +54,15 @@ colnames(Y) <- c("aptivaccp3igg","aptiva_acpafsiggvimentin2",
                  "aptiva_acpafsiggfibrinogen","aptiva_acpafsigghistone1",
                  "aptivaccp3iga","aptiva_acpafsigavimentin2",
                  "aptiva_acpafsigafibrinogen","aptiva_acpafsigahistone1")
-# Y <- apply(Y, 2, function(z) ifelse(z == 0, 1e-6, z))
+
+# Aptiva panels report a handful of exact 0s (below assay quantification):
+# 7 cells across the 8 modeled biomarkers on complete cases. log(0) = -Inf
+# breaks any log-scale likelihood (Stan rejects every init with lp = log(0)),
+# so set 0s to half the minimum positive value per biomarker before logging.
+# (Do NOT use a fixed constant like 1e-6: log(1e-6) = -13.8 sits ~13 SDs below
+# the typical log-value range and acts as pure leverage.)
+Y <- apply(Y, 2, function(z) ifelse(z == 0, min(z[z > 0]) / 2, z))
+
 logY <- log(Y) # log transform responses
 
 # Sample numbers
